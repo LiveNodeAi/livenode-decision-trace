@@ -39,6 +39,5 @@ Earlier Workers `5585df73…`, `5a90dada…`, `690479a4…`, `713f0889…`, `d9e
 
 ## Remaining submission artifacts
 
-- 3:2 project thumbnail.
 - Recorded 60–90 second demo video and public video URL.
 - Public source repository link.

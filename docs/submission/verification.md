@@ -66,6 +66,9 @@ Current production acceptance: **PASS**.
 
 Submission artifacts still pending:
 
-- 3:2 project thumbnail
 - recorded 60–90 second demo video and a public video URL
 - public source repository link
+
+Completed submission image:
+
+- [3:2 project thumbnail](screenshots/thumbnail-3x2.png) — 1200 × 800, generated from a memo-free mocked result
