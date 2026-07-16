@@ -16,7 +16,7 @@ The product demonstrates the LiveNode principle that useful AI should preserve t
 - OpenAI-powered structured analysis
 - Six-section Decision Trace
 - Evidence excerpts grounded in the submitted text
-- Markdown copy/export
+- Markdown copy/export in both human-facing Decision Trace and AI-reusable KX Note formats
 - Japanese and English input
 - Responsive desktop and mobile layouts
 - Stateless processing with no database or account
@@ -37,7 +37,7 @@ The product demonstrates the LiveNode principle that useful AI should preserve t
 3. The user selects **Generate Decision Trace**.
 4. The server validates the input and requests a schema-constrained analysis from OpenAI.
 5. Six cards appear in order, with the recommendation and confidence summary shown first.
-6. The user copies the complete result as Markdown or resets the experience.
+6. The user copies the result as either Decision Trace Markdown or KX Note Markdown, or resets the experience.
 
 The three samples cover a business/product decision, a public-sector policy decision, and an everyday operational decision. Each sample includes genuine trade-offs rather than an obvious answer.
 
@@ -53,6 +53,30 @@ The model must return a single validated object with these sections:
 6. **Next actions** — concrete, ordered steps that reduce uncertainty or move the decision forward
 
 Each analytical claim may include short evidence excerpts from the input. The model must distinguish supplied facts from inference and must not invent unavailable facts.
+
+## Relationship to the KX Pipeline
+
+The six on-screen sections are a human-facing view for understanding and acting on a decision. The KX pipeline's canonical five sections — Claim, Evidence, Data, Constraints, and Links — are a persistence format for later AI retrieval and reuse.
+
+The product keeps these layers distinct and provides a deterministic transformation:
+
+```text
+Decision Trace (six human-facing sections)
+        ↓ transform
+KX Note (five AI-reusable sections)
+```
+
+The KX Note mapping is:
+
+| KX Note section | Decision Trace content |
+|---|---|
+| Claim | Recommendation and confidence |
+| Evidence | Recommendation reasoning, decision criteria, and grounded excerpts |
+| Data | Situation, supplied facts, and considered options |
+| Constraints | Assumptions, trade-offs, risks, and conditions that would change the conclusion |
+| Links | Related people, projects, and decision themes explicitly present in the input; the model must not invent connections |
+
+Next actions are appended as an operational supplement after the canonical five sections rather than changing the KX Note schema. This preserves compatibility with the existing KX pipeline while retaining immediate usefulness.
 
 ## Interface Design
 
@@ -77,7 +101,7 @@ The interface is a single page with three states: input, generating, and result.
 - Recommendation summary and confidence at the top
 - Six sequential cards with clear visual hierarchy
 - Evidence labels that distinguish input text from AI inference
-- **Copy Markdown** and **Start over** actions
+- **Copy Decision Trace**, **Copy KX Note**, and **Start over** actions
 
 The visual direction uses a restrained cosmic/constellation motif associated with LiveNode, while keeping the content surface bright, legible, and immediately scannable. Decorative effects must not compete with the trace.
 
@@ -91,7 +115,7 @@ The visual direction uses a restrained cosmic/constellation motif associated wit
 - **Secrets:** OpenAI credentials remain in server-side environment variables
 - **Model:** configurable through an environment variable and set to an eligible model recommended in the current OpenAI Build Week resources
 
-The browser sends only the memo text and locale to a same-origin server endpoint. The endpoint validates length, calls OpenAI, validates the response schema, and returns the Decision Trace. The browser converts the validated object to Markdown locally.
+The browser sends only the memo text and locale to a same-origin server endpoint. The endpoint validates length, calls OpenAI, validates the response schema, and returns the Decision Trace. The browser converts the validated object to both Markdown formats locally.
 
 ## Validation and Error Handling
 
@@ -115,7 +139,7 @@ The browser sends only the memo text and locale to a same-origin server endpoint
 ### Automated
 
 - Schema tests for a complete valid trace and rejected malformed traces
-- Unit tests for input validation and Markdown conversion
+- Unit tests for input validation and both Markdown conversions
 - Route tests for success, provider failure, timeout, and malformed provider response
 - Security check confirming no secret is present in the client bundle
 
@@ -125,7 +149,8 @@ The browser sends only the memo text and locale to a same-origin server endpoint
 - Test short, long, Japanese, and English input
 - Confirm the full flow works on desktop and mobile widths
 - Confirm failed requests retain input and retry correctly
-- Confirm Markdown copy produces all six sections
+- Confirm Decision Trace copy produces all six sections
+- Confirm KX Note copy produces Claim, Evidence, Data, Constraints, and Links without invented connections
 - Measure the sample-to-result flow and keep it within the 30-second success target under normal conditions
 
 ## Submission Assets
@@ -134,7 +159,7 @@ The implementation must support creation of:
 
 - A public demo URL
 - A public source repository or reviewable code link
-- A 60–90 second demo video showing sample selection, generation, evidence, and Markdown copy
+- A 60–90 second demo video showing sample selection, generation, evidence, and KX Note transformation
 - A 3:2 project thumbnail and two or three screenshots
 - A Devpost project story covering inspiration, implementation, lessons, and challenges
 
@@ -143,6 +168,7 @@ The implementation must support creation of:
 - A first-time visitor can complete the core flow without instructions.
 - Every successful result contains all six schema sections.
 - Recommendations are visibly grounded in supplied text and distinguish inference.
+- The same result can be copied as both a human-facing Decision Trace and an AI-reusable KX Note.
 - Submitted memo text is not persisted by the application.
 - API secrets never reach the browser.
 - The deployed production flow is manually verified on desktop and mobile.
