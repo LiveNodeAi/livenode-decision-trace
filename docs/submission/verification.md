@@ -10,7 +10,7 @@ No submitted memo text or model output is stored in this document or the screens
 
 ## Evidence scope
 
-The current production Worker `a0d748ce-b031-47eb-896c-68647a812d97` was deployed from commit `c45b0c37fe3f92f6fdbf5c852851299f7f691760`. Structurally valid grounding mismatches are now repaired deterministically: invalid supplied evidence is downgraded to explicit inference and ungrounded links are dropped before canonical validation. The three API checks passed, but the combined harness terminated without emitting either UI result. Those UI checks were not rerun, so the current acceptance remains **BLOCKED** rather than reusing or inferring evidence.
+The current production Worker `a0d748ce-b031-47eb-896c-68647a812d97` was deployed from commit `c45b0c37fe3f92f6fdbf5c852851299f7f691760`. Structurally valid grounding mismatches are repaired deterministically: invalid supplied evidence is downgraded to explicit inference and ungrounded links are dropped before canonical validation. All five assigned current-version checks passed. The two UI checks used separate locally mock-validated harnesses with startup hydration assertions, request counters, structured errors, `finally` cleanup, and captured process exit codes.
 
 ## Deterministic-grounding acceptance
 
@@ -19,10 +19,10 @@ The current production Worker `a0d748ce-b031-47eb-896c-68647a812d97` was deploye
 | Product canary | 200 | 8,028 ms | Yes | Japanese | Safe |
 | Japanese free-form | 200 | 7,681 ms | Yes | Japanese | Safe |
 | Benign English free-form | 200 | 4,379 ms | Yes | English | Safe |
-| Desktop public-policy | Unverified | — | — | — | — |
-| Mobile operations | Not run after harness termination | — | — | — | — |
+| Desktop public-policy | 200 | 8,450 ms | Yes | Japanese | Safe |
+| Mobile operations | 200 | 8,359 ms | Yes | Japanese | Safe |
 
-The API checks were each run exactly once with no harness retry or fallback. The UI evidence is intentionally not claimed because no result record was emitted; neither UI check was rerun. Post-run local inspection found no surviving Node/Playwright/Chromium process, no harness artifact, and no syntax error. The execution wrapper retained stdout but discarded the child exit-code field, and no stderr/error was emitted, so the exact exit code is unrecoverable. Because the harness increments its request counter in memory and logs only after the response, render, copy, and layout assertions, the absence of a desktop line cannot prove that no desktop API request was sent; mobile request status is likewise not established. This is classified as a harness/process observability failure, not a production UI pass or application failure.
+Each check was run exactly once with no harness retry or fallback. Desktop and mobile each observed one API request, rendered six cards, produced distinct non-empty Decision Trace and KX Note exports with every required heading, had no horizontal overflow, exposed no memo/key/stack content, completed below 28 seconds, and exited with code 0. The earlier combined-harness observability gap is superseded by these separately captured current-version results.
 
 ## Provider-schema compatibility canary
 
@@ -96,7 +96,7 @@ Non-sensitive input-state screenshots:
 
 ## Acceptance summary
 
-The current Worker is **not submission-ready** because current-version desktop and mobile UI evidence is incomplete. Older production evidence does not qualify this deployment.
+The current Worker passed its assigned production acceptance. Submission readiness still depends on the non-runtime artifacts listed below; older production evidence is not used to qualify this deployment.
 
 Submission artifacts still pending:
 

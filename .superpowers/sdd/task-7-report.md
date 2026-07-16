@@ -227,3 +227,12 @@ Status: BLOCKED (API acceptance passed; current-version UI evidence incomplete)
 - Benign English free-form: HTTP 200, 4,379 ms, six sections, English, exposure-safe.
 - The combined harness terminated without emitting desktop or mobile result records. They were not rerun, so no current-version UI/copy/layout claim is made.
 - Local post-run inspection found no surviving harness/browser process, no harness artifact, and no syntax error. The execution wrapper preserved stdout but not the child exit-code field; no stderr/error was emitted, so the exact exit code cannot be recovered. Since the harness records request counts only in memory and logs each UI result after response/render/copy/layout work, whether desktop emitted an API request cannot be proven from the retained evidence; mobile request status is also unknown. This is a harness/process observability failure rather than evidence of an application result.
+
+## Isolated UI acceptance completion (2026-07-16)
+
+Status: PASS
+
+- Before production use, separate desktop and mobile harnesses each passed against a local mocked endpoint with hydration confirmed, exactly one intercepted request, all UI/export/layout/exposure assertions, and exit code 0.
+- Desktop 1440 public-policy: HTTP 200, 8,450 ms, exactly one request, six cards, both distinct export heading sets PASS, no overflow, exposure-safe, exit code 0.
+- Mobile 375 operations: HTTP 200, 8,359 ms, exactly one request, six cards, both distinct export heading sets PASS, no overflow, exposure-safe, exit code 0.
+- No live retry, fallback, or extra generation was made. These isolated results supersede the earlier combined-harness observability gap for Worker `a0d748ce-b031-47eb-896c-68647a812d97`.
