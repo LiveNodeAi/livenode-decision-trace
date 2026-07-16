@@ -14,6 +14,16 @@ No submitted memo text or model output is stored in this document or the screens
 
 Worker `a0d748ce-b031-47eb-896c-68647a812d97` is the sole current acceptance target. Structurally valid grounding mismatches are repaired deterministically: invalid supplied evidence is downgraded to explicit inference and ungrounded links are dropped before canonical validation.
 
+## Product-scope truth at this acceptance target
+
+The submission describes three separate layers. This is a positioning statement, not evidence that all three layers are deployed:
+
+- **Web demo — capture layer:** the accepted public Worker currently processes one Japanese or English decision memo and produces one validated Decision Trace plus two copyable Markdown formats.
+- **Local KX — working refinement layer:** the developer operates a separate, human-reviewed Markdown workflow for distilling and reconnecting knowledge. It is not hosted by the accepted public Worker.
+- **Distributable Skill — planned delivery layer:** packaging this workflow for other users and AI environments is future work, not a deployed capability of the accepted public Worker.
+
+Multi-topic transcript detection (up to five reviewed topics) and browser-generated Markdown ZIP export are in development in the current implementation phase. They are not included in this production acceptance and must not be presented as available in the accepted public version. Direct automatic saving to Obsidian or Notion is also not implemented.
+
 | Input | HTTP | Duration | Six sections | Language | Exposure |
 | --- | ---: | ---: | ---: | --- | --- |
 | Product canary | 200 | 8,028 ms | Yes | Japanese | Safe |

@@ -2,7 +2,11 @@
 
 AI can give us a recommendation in seconds, but the useful part of a real decision is often what disappears: what we knew, what we assumed, what alternatives we considered, and what evidence would make us change our mind. LiveNode is built around a simple principle: preserve the decision process, not only the output. Decision Trace turns that principle into a small, public tool anyone can understand in one interaction.
 
+**「Inspiration」日本語訳：** AIは数秒で推奨を出せます。しかし実際の判断で役立つ部分ほど、しばしば消えてしまいます。何を知っていたか、何を前提にしたか、どの選択肢を検討したか、どんな根拠があれば考えを変えるのか。LiveNodeの中心原則は、出力だけでなく判断プロセスを残すことです。Decision Traceは、その原則を誰でも一度の操作で理解できる小さな公開ツールにします。
+
 **One-line description:** LiveNode Decision Trace turns a conversation into a reusable memory of how a decision was made—not just what was decided.
+
+**一文説明の日本語訳：** 会話を、単なる決定事項ではなく「なぜそう判断したのか」を再利用できる記憶へ変える。
 
 ## Core philosophy
 

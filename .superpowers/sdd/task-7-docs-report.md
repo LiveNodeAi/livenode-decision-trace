@@ -37,3 +37,11 @@ No application code, UI components, tests, or configuration were edited.
 - Manual diff review of the three requested documents
 
 All checks completed without a whitespace error or prohibited placeholder phrase.
+
+## Important review follow-up
+
+- Added an explicit Japanese translation immediately after the Devpost `Inspiration` paragraph.
+- Added an explicit Japanese translation immediately after the one-line English description, including the canonical wording: 「会話を、単なる決定事項ではなく『なぜそう判断したのか』を再利用できる記憶へ変える。」
+- Added a production-verification scope section that records the three layers and distinguishes the accepted single-memo public Worker from the local KX workflow and future Skill.
+- Recorded multi-topic/ZIP as in development and direct Obsidian/Notion saving as not implemented.
+- No real API request was made during this follow-up.
