@@ -32,8 +32,8 @@ For the current-model migration, RED showed two expected failures: the request s
 | Product sample | 200 | 9,476 ms | Yes | Japanese |
 | Japanese free-form | 200 | 6,840 ms | Yes | Japanese |
 | English free-form | 200 | 4,813 ms | Yes | English |
-| Desktop 1440 UI | 200 | 7,817 ms | Yes | Japanese |
-| Mobile 375 UI | 200 | 8,180 ms | Yes | Japanese |
+| Desktop 1440 UI — Public-policy sample (`public-policy`) | 200 | 7,817 ms | Yes | Japanese |
+| Mobile 375 UI — Operations sample (`operations`) | 200 | 8,180 ms | Yes | Japanese |
 
 Status: **PASS**. Exactly five generations were run against Worker `713f0889-aad7-47b8-b5fd-eb3c1abfa03c`; all returned HTTP 200 with six sections below 28 seconds. No older deployment timings are reused and no retries or fallback model probes were made.
 
@@ -47,8 +47,8 @@ Status: **PASS**. Exactly five generations were run against Worker `713f0889-aad
 
 | Viewport | HTTP | Duration | Six cards | Overflow | Decision Trace headings | KX Note headings |
 | --- | ---: | ---: | ---: | --- | --- | --- |
-| 1440 × 1000 | 200 | 7,817 ms | 6 | No | PASS | PASS |
-| 375 × 812 | 200 | 8,180 ms | 6 | No | PASS | PASS |
+| 1440 × 1000 — Public-policy sample (`public-policy`) | 200 | 7,817 ms | 6 | No | PASS | PASS |
+| 375 × 812 — Operations sample (`operations`) | 200 | 8,180 ms | 6 | No | PASS | PASS |
 
 Both current-version UI checks observed exactly one API request, rendered six cards, produced distinct non-empty Decision Trace and KX Note exports with every required heading, stayed within the viewport with no horizontal overflow, and exposed no submitted memo, provider detail, stack, or key-shaped field in the response.
 

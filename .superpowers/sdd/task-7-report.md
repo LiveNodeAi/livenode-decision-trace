@@ -151,5 +151,5 @@ Exactly five current-version generations were run, with no retry or fallback pro
 - Product API: HTTP 200, 9,476 ms, six sections, exposure-safe.
 - Japanese free-form API: HTTP 200, 6,840 ms, six sections, exposure-safe.
 - English free-form API: HTTP 200, 4,813 ms, six sections, exposure-safe.
-- Desktop 1440 UI: HTTP 200, 7,817 ms, one API request, six sections, both distinct non-empty exports and headings pass, no overflow, exposure-safe.
-- Mobile 375 UI: HTTP 200, 8,180 ms, one API request, six sections, both distinct non-empty exports and headings pass, no overflow, exposure-safe.
+- Desktop 1440 UI — Public-policy sample (`public-policy`): HTTP 200, 7,817 ms, one API request, six sections, both distinct non-empty exports and headings pass, no overflow, exposure-safe.
+- Mobile 375 UI — Operations sample (`operations`): HTTP 200, 8,180 ms, one API request, six sections, both distinct non-empty exports and headings pass, no overflow, exposure-safe.
