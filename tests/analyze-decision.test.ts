@@ -60,6 +60,10 @@ describe("analyzeDecision", () => {
     expect(instructions).toMatch(/link/i);
     expect(instructions).toMatch(/medical.*legal.*financial/is);
     expect(instructions).toMatch(/language/i);
+    expect(instructions).toMatch(/concise/i);
+    expect(instructions).toMatch(/no more than 3 context items/i);
+    expect(instructions).toMatch(/no more than 3 options/i);
+    expect(instructions).toMatch(/no more than 4 next actions/i);
     expect(options?.signal).toBeInstanceOf(AbortSignal);
   });
 
