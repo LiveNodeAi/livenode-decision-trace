@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import type { DecisionTrace } from "@/lib/decision-trace-schema";
+import { decisionTraceSchema, type DecisionTrace } from "@/lib/decision-trace-schema";
 import { validateMemo } from "@/lib/validation";
 import { InputPanel } from "./input-panel";
 import { ResultPanel } from "./result-panel";
@@ -20,6 +20,7 @@ const errors: Record<string, string> = {
   ANALYSIS_TIMEOUT: "分析に時間がかかりすぎました。入力内容は残っています。もう一度試してください。",
   ANALYSIS_UNAVAILABLE: "現在、分析を完了できませんでした。入力内容は残っています。もう一度試してください。",
   INVALID_REQUEST: "入力内容を確認して、もう一度試してください。",
+  MALFORMED_RESPONSE: "分析結果を確認できませんでした。入力内容は残っています。もう一度試してください。",
 };
 
 export function DecisionTraceApp() {
@@ -50,8 +51,14 @@ export function DecisionTraceApp() {
         setState({ status: "error", memo, error: errors[code] ?? errors.ANALYSIS_UNAVAILABLE });
         return;
       }
-      const trace = (body as { trace: DecisionTrace }).trace;
-      setState({ status: "result", memo, trace });
+      const trace = decisionTraceSchema.safeParse(
+        typeof body === "object" && body !== null && "trace" in body ? body.trace : undefined,
+      );
+      if (!trace.success) {
+        setState({ status: "error", memo, error: errors.MALFORMED_RESPONSE });
+        return;
+      }
+      setState({ status: "result", memo, trace: trace.data });
     } catch {
       setState({ status: "error", memo, error: errors.ANALYSIS_UNAVAILABLE });
     }

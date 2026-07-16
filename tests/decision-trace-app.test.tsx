@@ -114,6 +114,17 @@ describe("DecisionTraceApp", () => {
     expect(screen.getByRole("button", { name: "もう一度試す" })).toBeInTheDocument();
   });
 
+  it("rejects a malformed successful response and preserves the memo for retry", async () => {
+    fetchMock.mockResolvedValue(response(200, { trace: { language: "ja" } }));
+    render(<DecisionTraceApp />);
+    await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
+    await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("分析結果を確認できませんでした");
+    expect(screen.getByRole("textbox", { name: "判断メモ" })).toHaveValue(publicPolicySample.memo);
+    expect(screen.getByRole("button", { name: "もう一度試す" })).toBeInTheDocument();
+  });
+
   it("copies both formatter outputs", async () => {
     fetchMock.mockResolvedValue(response(200, { trace }));
     render(<DecisionTraceApp />);
@@ -125,6 +136,31 @@ describe("DecisionTraceApp", () => {
 
     await waitFor(() => expect(writeText).toHaveBeenNthCalledWith(1, toDecisionTraceMarkdown(trace)));
     expect(writeText).toHaveBeenNthCalledWith(2, toKxNoteMarkdown(trace));
+    expect(screen.getByRole("status")).toHaveTextContent("KX Noteをコピーしました");
+  });
+
+  it("announces a localized clipboard rejection as an accessible error", async () => {
+    writeText.mockRejectedValue(new Error("permission denied"));
+    fetchMock.mockResolvedValue(response(200, { trace }));
+    render(<DecisionTraceApp />);
+    await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
+    await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));
+
+    await userEvent.click(await screen.findByRole("button", { name: "Decision Traceをコピー" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("コピーできませんでした");
+  });
+
+  it("announces unavailable clipboard support in English", async () => {
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined });
+    fetchMock.mockResolvedValue(response(200, { trace: { ...trace, language: "en" } }));
+    render(<DecisionTraceApp />);
+    await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
+    await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));
+
+    await userEvent.click(await screen.findByRole("button", { name: "Copy KX Note" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not copy");
   });
 
   it("starts over with an empty input", async () => {

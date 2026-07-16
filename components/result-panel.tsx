@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 import type { DecisionTrace } from "@/lib/decision-trace-schema";
 import { toDecisionTraceMarkdown, toKxNoteMarkdown } from "@/lib/markdown";
 import { TraceCard } from "./trace-card";
@@ -35,10 +39,29 @@ type ResultPanelProps = {
 };
 
 export function ResultPanel({ trace, onReset }: ResultPanelProps) {
+  const [copyNotice, setCopyNotice] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const ja = trace.language === "ja";
   const labels = ja
     ? ["状況", "前提", "判断基準", "選択肢", "推奨", "次のアクション"]
     : ["Situation", "Assumptions", "Criteria", "Options", "Recommendation", "Next actions"];
+
+  async function copy(markdown: string, format: "Decision Trace" | "KX Note") {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+      await navigator.clipboard.writeText(markdown);
+      setCopyNotice({
+        kind: "success",
+        message: ja ? `${format}をコピーしました。` : `${format} copied.`,
+      });
+    } catch {
+      setCopyNotice({
+        kind: "error",
+        message: ja
+          ? "コピーできませんでした。ブラウザの権限を確認して、もう一度お試しください。"
+          : "Could not copy. Check your browser permissions and try again.",
+      });
+    }
+  }
 
   return (
     <section aria-labelledby="result-title">
@@ -84,14 +107,17 @@ export function ResultPanel({ trace, onReset }: ResultPanelProps) {
       </div>
 
       <div aria-label={ja ? "結果の操作" : "Result actions"}>
-        <button type="button" onClick={() => navigator.clipboard.writeText(toDecisionTraceMarkdown(trace))}>
+        <button type="button" onClick={async () => await copy(toDecisionTraceMarkdown(trace), "Decision Trace")}>
           {ja ? "Decision Traceをコピー" : "Copy Decision Trace"}
         </button>
-        <button type="button" onClick={() => navigator.clipboard.writeText(toKxNoteMarkdown(trace))}>
+        <button type="button" onClick={async () => await copy(toKxNoteMarkdown(trace), "KX Note")}>
           {ja ? "KX Noteをコピー" : "Copy KX Note"}
         </button>
         <button type="button" onClick={onReset}>{ja ? "最初からやり直す" : "Start over"}</button>
       </div>
+      {copyNotice ? (
+        <p role={copyNotice.kind === "success" ? "status" : "alert"}>{copyNotice.message}</p>
+      ) : null}
     </section>
   );
 }
