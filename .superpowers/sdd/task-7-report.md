@@ -214,3 +214,15 @@ Status: BLOCKED
 - Local verification: targeted 34/34, full Vitest 81/81, Playwright 2/2, production build PASS, diff check PASS, secret scan 73 files/0 matches.
 - Product canary: HTTP 422, `ANALYSIS_COULD_NOT_GROUND`, 15,901 ms, no trace, exposure-safe.
 - The canary was the only live generation. No retry/fallback occurred; the remaining four acceptance checks were not run.
+
+## Deterministic-grounding deployment (2026-07-16)
+
+Status: BLOCKED (API acceptance passed; current-version UI evidence incomplete)
+
+- Commit: `c45b0c37fe3f92f6fdbf5c852851299f7f691760`
+- Worker version: `a0d748ce-b031-47eb-896c-68647a812d97`
+- Local verification: targeted 32/32, full Vitest 79/79, Playwright 2/2, production build PASS, diff check PASS, secret scan 73 files/0 matches.
+- Product canary: HTTP 200, 8,028 ms, six sections, Japanese, exposure-safe.
+- Japanese free-form: HTTP 200, 7,681 ms, six sections, Japanese, exposure-safe.
+- Benign English free-form: HTTP 200, 4,379 ms, six sections, English, exposure-safe.
+- The combined harness terminated without emitting desktop or mobile result records. They were not rerun, so no current-version UI/copy/layout claim is made.

@@ -4,13 +4,25 @@ Verified on 2026-07-16 (Asia/Tokyo).
 
 Public URL: <https://livenode-decision-trace.takahiro-nochi.workers.dev>
 
-Cloudflare Worker version: `a7e0b721-70aa-4942-a8ed-7c85574d4d06`
+Cloudflare Worker version: `a0d748ce-b031-47eb-896c-68647a812d97`
 
 No submitted memo text or model output is stored in this document or the screenshots.
 
 ## Evidence scope
 
-The current production Worker `a7e0b721-70aa-4942-a8ed-7c85574d4d06` was deployed from commit `47a70f65c5b91bb0851da7d15743d0cf558c9029`. It uses a provider-compatible union-free structural schema followed by the unchanged strict local provenance and memo-grounding checks. Its product canary returned `ANALYSIS_COULD_NOT_GROUND`, so the remaining four acceptance generations were not run. Older Worker timings are historical only and are not reused as current-version evidence.
+The current production Worker `a0d748ce-b031-47eb-896c-68647a812d97` was deployed from commit `c45b0c37fe3f92f6fdbf5c852851299f7f691760`. Structurally valid grounding mismatches are now repaired deterministically: invalid supplied evidence is downgraded to explicit inference and ungrounded links are dropped before canonical validation. The three API checks passed, but the combined harness terminated without emitting either UI result. Those UI checks were not rerun, so the current acceptance remains **BLOCKED** rather than reusing or inferring evidence.
+
+## Deterministic-grounding acceptance
+
+| Input | HTTP | Duration | Six sections | Language | Exposure |
+| --- | ---: | ---: | ---: | --- | --- |
+| Product canary | 200 | 8,028 ms | Yes | Japanese | Safe |
+| Japanese free-form | 200 | 7,681 ms | Yes | Japanese | Safe |
+| Benign English free-form | 200 | 4,379 ms | Yes | English | Safe |
+| Desktop public-policy | Unverified | — | — | — | — |
+| Mobile operations | Not run after harness termination | — | — | — | — |
+
+The API checks were each run exactly once with no harness retry or fallback. The UI evidence is intentionally not claimed because no result record was emitted; neither UI check was rerun.
 
 ## Provider-schema compatibility canary
 
@@ -84,7 +96,7 @@ Non-sensitive input-state screenshots:
 
 ## Acceptance summary
 
-The current Worker is **not submission-ready** because its product canary returned `ANALYSIS_COULD_NOT_GROUND`. Older production evidence does not qualify this deployment.
+The current Worker is **not submission-ready** because current-version desktop and mobile UI evidence is incomplete. Older production evidence does not qualify this deployment.
 
 Submission artifacts still pending:
 
