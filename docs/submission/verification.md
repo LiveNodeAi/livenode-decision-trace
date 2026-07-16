@@ -22,7 +22,7 @@ The current production Worker `a0d748ce-b031-47eb-896c-68647a812d97` was deploye
 | Desktop public-policy | Unverified | — | — | — | — |
 | Mobile operations | Not run after harness termination | — | — | — | — |
 
-The API checks were each run exactly once with no harness retry or fallback. The UI evidence is intentionally not claimed because no result record was emitted; neither UI check was rerun.
+The API checks were each run exactly once with no harness retry or fallback. The UI evidence is intentionally not claimed because no result record was emitted; neither UI check was rerun. Post-run local inspection found no surviving Node/Playwright/Chromium process, no harness artifact, and no syntax error. The execution wrapper retained stdout but discarded the child exit-code field, and no stderr/error was emitted, so the exact exit code is unrecoverable. Because the harness increments its request counter in memory and logs only after the response, render, copy, and layout assertions, the absence of a desktop line cannot prove that no desktop API request was sent; mobile request status is likewise not established. This is classified as a harness/process observability failure, not a production UI pass or application failure.
 
 ## Provider-schema compatibility canary
 
