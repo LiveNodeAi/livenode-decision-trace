@@ -66,9 +66,13 @@ Current production acceptance: **PASS**.
 
 Submission artifacts still pending:
 
-- recorded 60–90 second demo video and a public video URL
+- public URL for the recorded demo video
 - public source repository link
 
 Completed submission image:
 
 - [3:2 project thumbnail](screenshots/thumbnail-3x2.png) — 1200 × 800, generated from a memo-free mocked result
+
+Completed demo media:
+
+- [75-second Japanese narrated demo](demo-video-ja.mp4) — 1200 × 800 MP4, generated from a memo-free mocked result
