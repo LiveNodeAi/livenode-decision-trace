@@ -50,6 +50,7 @@ function requestFor(memo: string, model: string): Record<string, unknown> {
   return {
     model,
     store: false,
+    reasoning: { effort: "minimal" },
     instructions: SYSTEM_INSTRUCTIONS,
     input: [{ role: "user", content: [{ type: "input_text", text: memo }] }],
     text: {
@@ -118,7 +119,7 @@ export async function analyzeDecision({
   const request = requestFor(memo, model);
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    const signal = AbortSignal.timeout(18_000);
+    const signal = AbortSignal.timeout(28_000);
     let response: ResponsesResult;
     try {
       response = await client.create(request, { signal });

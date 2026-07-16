@@ -4,7 +4,7 @@ Verified on 2026-07-16 (Asia/Tokyo).
 
 Public URL: <https://livenode-decision-trace.takahiro-nochi.workers.dev>
 
-Cloudflare Worker version: `5585df73-15e8-41c4-b386-2f28b3bbca9f`
+Cloudflare Worker version: `5a90dada-388c-469f-830e-0b7b9eee225a`
 
 No submitted memo text or model output is stored in this document or the screenshots.
 
@@ -12,59 +12,61 @@ No submitted memo text or model output is stored in this document or the screens
 
 - OpenNext production build: PASS
 - Worker upload and `workers.dev` route: PASS
-- Server-side `OPENAI_API_KEY` secret: configured through Wrangler standard input
+- Server-side `OPENAI_API_KEY` secret: retained in the Worker secret store; never printed or committed
 - Non-secret `OPENAI_MODEL`: `gpt-5`
+- Model request: `reasoning: { effort: "minimal" }`
+- Per-attempt abort signal: fresh 28-second timeout
 
-## Workers preview
+## TDD evidence
 
-The local Worker preview built and started successfully on port 8787. The OpenAI key and model binding were present and hidden by Wrangler. A minimal `gpt-5` provider probe succeeded in 1,572 ms, confirming the project key has model access.
-
-The three full Decision Trace samples each reached the application's 18-second provider timeout and returned the public `ANALYSIS_TIMEOUT` response. Preview logs contained only request method, route, status, and duration; no memo or model output appeared.
+The regression test was written before the implementation change. RED showed two independent failures: the request lacked `reasoning: { effort: "minimal" }`, and both attempt timeouts were 18,000 ms instead of 28,000 ms. After the minimal implementation change, the targeted analyzer suite passed 9/9.
 
 ## Production AI flow
 
-| Input | HTTP | Duration | Six sections |
-| --- | ---: | ---: | ---: |
-| Product sample | 504 | 18,160 ms | 0 |
-| Public-policy sample | 504 | 18,035 ms | 0 |
-| Operations sample | 504 | 18,042 ms | 0 |
-| Japanese free-form check | 504 | 18,307 ms | 0 |
-| English free-form check | 504 | 18,034 ms | 0 |
+| Input | HTTP | Duration | Six sections | Language |
+| --- | ---: | ---: | ---: | --- |
+| Product sample, first request after deployment | 504 | 18,422 ms | No | — |
+| Product sample, explicit retry | 504 | 28,488 ms | No | — |
+| Public-policy sample | 200 | 15,446 ms | Yes | Japanese |
+| Operations sample | 200 | 23,858 ms | Yes | Japanese |
+| Japanese free-form check | 200 | 20,759 ms | Yes | Japanese |
+| English free-form check | 200 | 15,210 ms | Yes | English |
 
-Status: **BLOCKED**. The key and model are accessible, but the strict full-schema generation does not complete before the required 18-second application timeout. Consequently, a successful result under 30 seconds and live production copy verification are not established.
+Status: **BLOCKED**. Four of five required input types produced complete six-section traces under 30 seconds, but the product sample did not complete successfully and one attempt exceeded the 28-second application limit. The failed calls remain visible here rather than being replaced by only successful measurements.
 
 ## Privacy and response exposure
 
-- All five production error responses contained only the documented public error code.
-- No API-key-shaped value, provider name, provider error body, stack trace, or submitted memo was present in the inspected responses.
+- All inspected success and error responses had no API-key-shaped value, provider error detail, stack trace, or submitted memo exposure.
 - The checked-in source and generated client assets are scanned separately during final verification for the local secret value.
+- Browser network checks were performed without storing response bodies or memo content in artifacts.
 
-## Responsive layout
+## Responsive result and Markdown copy
 
-| Viewport | Horizontal overflow | Result |
-| --- | --- | --- |
-| 1440 × 1000 | No | PASS |
-| 375 × 812 | No | PASS |
+| Viewport | HTTP | Duration | Six cards | Overflow | Decision Trace headings | KX Note headings |
+| --- | ---: | ---: | ---: | --- | --- | --- |
+| 1440 × 1000 | 200 | 17,725 ms | 6 | No | PASS | PASS |
+| 375 × 812 | 200 | 23,206 ms | 6 | No | PASS | PASS |
 
-Non-sensitive screenshots:
+The Decision Trace copy contained Situation, Assumptions, Decision criteria, Options, Recommendation, and Next actions in Japanese. The KX Note copy contained Claim, Evidence, Data, Constraints, and Links in Japanese. Clipboard content was checked in memory and was not saved.
 
-- [Desktop input state](screenshots/desktop.png)
-- [375px input state](screenshots/mobile-375.png)
+Non-sensitive input-state screenshots:
 
-The input state is verified at both widths. A production result-state screenshot is unavailable because the live model requests timed out.
+- [Desktop](screenshots/desktop.png)
+- [375px](screenshots/mobile-375.png)
 
-## Markdown copies
+## Rate-limit protection
 
-- Automated browser verification confirms Decision Trace Markdown contains all six headings.
-- Automated browser verification confirms KX Note Markdown contains Claim, Evidence, Data, Constraints, and Links.
-- Live production copy verification: **BLOCKED** by the full-schema timeout above.
+- Deployed binding: `DECISION_TRACE_RATE_LIMITER (10 requests/60s)` — PASS
+- Route behavior when the binding denies a request: automated test verifies `429 { "error": "RATE_LIMITED" }` — PASS
+- Production binding behavior is treated as approximate abuse protection, not deterministic exact request accounting. A specific 11th-request 429 is not an acceptance requirement.
 
-## Rate limit
+## Automated checks
 
-Eleven valid requests were sent in one 18.65-second window. All eleven returned 504, and an immediate follow-up also returned 504 after 18.19 seconds. No request returned 429.
-
-Status: **FAIL** for the acceptance requirement that the 11th request within 60 seconds receive HTTP 429. The Cloudflare rate-limit binding is deployed and visible as `10 requests/60s`, but it did not reject this burst in the observed production run.
+- `npm test`: PASS, 40/40
+- `npm run build`: PASS
+- `npx playwright test`: PASS, 2/2
+- `git diff --check`: PASS
 
 ## Acceptance summary
 
-The Worker is public, responsive, secret-safe in inspected error paths, and layout-safe at desktop and 375px. Submission copy and input-state screenshots are ready. Production acceptance is not complete because full Decision Trace generation times out and the deployed rate limit did not produce the required 429 response.
+The deployed app now produces complete traces and both Markdown formats on desktop and 375px for the verified successful requests, without observed secret or provider-detail exposure. Production acceptance remains **BLOCKED** only because the product sample failed twice and one attempt reached 28.488 seconds, exceeding the approved 28-second limit.

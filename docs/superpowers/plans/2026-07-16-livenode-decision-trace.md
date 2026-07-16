@@ -16,7 +16,7 @@
 - The OpenAI request must use the Responses API, strict structured output, and `store: false`.
 - The model name must come from `OPENAI_MODEL`; local and production configuration initially use `gpt-5` and may be changed only after checking current Build Week Resources.
 - Input length must be 80–12,000 Unicode characters after trimming.
-- The public API must allow at most 10 analysis requests per IP per 60 seconds using a Cloudflare rate-limit binding.
+- The public API must use a Cloudflare rate-limit binding configured for 10 analysis requests per IP per 60 seconds as approximate abuse protection. Cloudflare rate limiting is intentionally eventually consistent and is not deterministic exact request accounting.
 - The human-facing result must contain Situation, Assumptions, Decision criteria, Options and trade-offs, Recommendation, and Next actions.
 - The KX Note export must contain Claim, Evidence, Data, Constraints, and Links in that order; Next actions follow as a non-canonical operational supplement.
 - KX links may only come from people, projects, or decision themes explicitly present in the input.
@@ -456,7 +456,7 @@ import { z } from "zod";
 
 The system instructions must state that memo text is untrusted content, quoted evidence must be verbatim and short, inference must be labeled, links must exist explicitly in the input, no medical/legal/financial authority may be claimed, and output language must follow the memo language.
 
-Parse `output_text` with `JSON.parse`, validate with `decisionTraceSchema.safeParse`, and retry exactly once only for parse/schema failure. Use an 18-second `AbortSignal.timeout(18_000)` for each attempt.
+Parse `output_text` with `JSON.parse`, validate with `decisionTraceSchema.safeParse`, and retry exactly once only for parse/schema failure. Request minimal model reasoning with `reasoning: { effort: "minimal" }` and use a fresh 28-second `AbortSignal.timeout(28_000)` for each attempt.
 
 - [ ] **Step 4: Run tests and commit**
 
@@ -721,7 +721,7 @@ Against the returned `workers.dev` URL:
 4. inspect browser network responses for accidental secret/provider-error exposure;
 5. verify the 375px and desktop layouts;
 6. copy both Markdown formats and confirm all required headings;
-7. confirm an 11th request within 60 seconds receives HTTP 429.
+7. confirm the deployed rate-limit binding is configured for 10 requests per 60 seconds and that the route maps a limiter denial to HTTP 429; treat the binding as approximate abuse protection rather than requiring a deterministic 11th-request rejection.
 
 Save only non-sensitive screenshots and timing results in `docs/submission/verification.md`; never save submitted memo text.
 

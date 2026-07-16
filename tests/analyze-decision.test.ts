@@ -48,6 +48,7 @@ describe("analyzeDecision", () => {
     expect(request).toMatchObject({
       model: "test-model",
       store: false,
+      reasoning: { effort: "minimal" },
       input: [{ role: "user", content: [{ type: "input_text", text: args.memo }] }],
       text: { format: { type: "json_schema", name: "decision_trace", strict: true } },
     });
@@ -60,6 +61,22 @@ describe("analyzeDecision", () => {
     expect(instructions).toMatch(/medical.*legal.*financial/is);
     expect(instructions).toMatch(/language/i);
     expect(options?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("uses a fresh 28-second timeout for every provider attempt", async () => {
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    const responses = ["not json", JSON.stringify(trace)];
+    const client = fakeClient(async () => ({ output_text: responses.shift()! }));
+
+    try {
+      await expect(analyzeDecision({ ...args, client })).resolves.toEqual(trace);
+      expect(timeout).toHaveBeenCalledTimes(2);
+      expect(timeout).toHaveBeenNthCalledWith(1, 28_000);
+      expect(timeout).toHaveBeenNthCalledWith(2, 28_000);
+      expect(client.create.mock.calls[0][1]?.signal).not.toBe(client.create.mock.calls[1][1]?.signal);
+    } finally {
+      timeout.mockRestore();
+    }
   });
 
   it("retries once after a malformed response and returns the valid second response", async () => {

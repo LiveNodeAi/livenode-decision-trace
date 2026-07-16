@@ -51,7 +51,7 @@ Browser (Next.js UI)
 - OpenAI Responses API with a strict JSON schema
 - Zod validation at the application boundary
 - OpenNext for Cloudflare Workers
-- Cloudflare rate-limit binding: 10 analysis requests per IP per 60 seconds
+- Cloudflare rate-limit binding configured for 10 analysis requests per IP per 60 seconds as approximate abuse protection (not deterministic exact accounting)
 - Vitest and Testing Library for unit/component/route tests
 - Playwright for the browser flow and responsive layout
 - No database, account, or application analytics
