@@ -113,3 +113,17 @@ Exactly five production probes were run. No memo or model output was logged or p
 
 Decision:
 - The bounded-output contract resolves the previously observed product-sample latency tail in the required three-run acceptance check without removing sections, changing the model, or relying on truncation.
+
+## Current-version evidence-gap check (2026-07-16)
+
+Worker version: `690479a4-b919-46b2-b357-fe7468b8f4a0`
+
+Status: BLOCKED (API free-form checks pass; live UI result/copy checks do not)
+
+Version-scoped results only; older deployment timings were not reused:
+- Japanese free-form: HTTP 200, 16,162 ms, six sections, no response exposure observed.
+- English free-form: HTTP 200, 16,147 ms, six sections, no response exposure observed.
+- Desktop 1440: the first harness run emitted zero API requests because it clicked before hydration. A local mock interception verified the corrected `networkidle`/textarea-ready harness and all UI assertions. The one authorized live generation received a response but rendered no result cards within 45 seconds; status/timing were not captured before the harness failed. No retry.
+- Mobile 375: the one authorized live generation returned HTTP 504 at 28,447 ms. It produced no result or exports; response exposure check passed. No retry.
+
+The corrected local UI harness verifies six sections, distinct non-empty Decision Trace and KX Note exports with all required headings, horizontal bounds, and response-shape exposure when supplied a valid response. Those assertions could not pass against the two authorized live attempts because neither produced a live result state.

@@ -35,20 +35,29 @@ For the final latency fix, RED showed 12 expected failures: the request lacked a
 
 Status: **PASS**. The product sample succeeded three consecutive times and both comparison samples succeeded once. All five bounded probes returned complete six-section traces below the 28-second application limit. No additional live requests were made in this verification round.
 
+### Current-version free-form checks
+
+These checks also ran against Worker `690479a4-b919-46b2-b357-fe7468b8f4a0`; no older deployment timings are reused.
+
+| Input | HTTP | Duration | Six sections | Response exposure |
+| --- | ---: | ---: | --- | --- |
+| Japanese free-form | 200 | 16,162 ms | Yes | None observed |
+| English free-form | 200 | 16,147 ms | Yes | None observed |
+
 ## Privacy and response exposure
 
 - All inspected success and error responses had no API-key-shaped value, provider error detail, stack trace, or submitted memo exposure.
 - The checked-in source and generated client assets are scanned separately during final verification for the local secret value.
 - Browser network checks were performed without storing response bodies or memo content in artifacts.
 
-## Responsive result and Markdown copy
+## Responsive result and Markdown copy — current Worker version
 
 | Viewport | HTTP | Duration | Six cards | Overflow | Decision Trace headings | KX Note headings |
 | --- | ---: | ---: | ---: | --- | --- | --- |
-| 1440 × 1000 | 200 | 17,725 ms | 6 | No | PASS | PASS |
-| 375 × 812 | 200 | 23,206 ms | 6 | No | PASS | PASS |
+| 1440 × 1000 | Response received; status not captured | Not captured | No result within 45s | Not verifiable | Not verifiable | Not verifiable |
+| 375 × 812 | 504 | 28,447 ms | No | Not verifiable | Not verifiable | Not verifiable |
 
-The Decision Trace copy contained Situation, Assumptions, Decision criteria, Options, Recommendation, and Next actions in Japanese. The KX Note copy contained Claim, Evidence, Data, Constraints, and Links in Japanese. Clipboard content was checked in memory and was not saved.
+The first desktop harness attempt emitted no API request because it clicked before React hydration. A local intercepted-response check then proved the corrected harness (`networkidle` plus textarea population) observes exactly one request and validates six cards, both distinct non-empty Markdown exports and their headings, overflow, and response exposure. The one authorized live desktop generation received an API response but did not render result cards within the 45-second UI window; the harness exited before recording its status and duration. It was not retried. The one authorized mobile generation returned the public 504 response at 28,447 ms. It was not retried. Neither live UI attempt produced exports or a result layout to inspect.
 
 Non-sensitive input-state screenshots:
 
@@ -70,4 +79,4 @@ Non-sensitive input-state screenshots:
 
 ## Acceptance summary
 
-The deployed app now produces complete traces for all required sample checks below 28 seconds and both Markdown formats remain covered on desktop and 375px, without observed secret or provider-detail exposure. Production acceptance is **PASS**.
+The deployed app passes the three sample API checks and both current-version free-form checks. Current-version live result/copy acceptance remains **BLOCKED**: the single desktop attempt produced no result within 45 seconds, and the single mobile attempt returned 504 at 28,447 ms. No retry or extra live generation was used.
