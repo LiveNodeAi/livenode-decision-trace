@@ -87,8 +87,12 @@ function traceIsGrounded(trace: DecisionTrace, memo: string): boolean {
     return evidence.length > 0 && normalizedMemo.includes(evidence);
   });
   const linksMatch = trace.links.every((link) => {
+    const label = normalizeGroundingText(link.label);
     const excerpt = normalizeGroundingText(link.sourceExcerpt);
-    return excerpt.length > 0 && normalizedMemo.includes(excerpt);
+    return label.length > 0
+      && excerpt.length > 0
+      && normalizedMemo.includes(label)
+      && normalizedMemo.includes(excerpt);
   });
   return evidenceMatches && linksMatch;
 }

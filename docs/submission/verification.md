@@ -69,7 +69,7 @@ Non-sensitive input-state screenshots:
 
 ## Current local automated checks
 
-- `npm test`: PASS, 65/65
+- `npm test`: PASS, 67/67
 - `npm run build`: PASS
 - `npx playwright test`: PASS, 2/2
 - `git diff --check`: PASS
