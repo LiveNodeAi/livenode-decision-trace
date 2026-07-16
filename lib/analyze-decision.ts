@@ -53,7 +53,7 @@ function requestFor(memo: string, model: string): Record<string, unknown> {
   return {
     model,
     store: false,
-    reasoning: { effort: "minimal" },
+    reasoning: { effort: "none" },
     instructions: SYSTEM_INSTRUCTIONS,
     input: [{ role: "user", content: [{ type: "input_text", text: memo }] }],
     text: {

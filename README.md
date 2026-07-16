@@ -78,7 +78,7 @@ Set these variables in `.dev.vars` (the file is ignored by Git):
 
 ```dotenv
 OPENAI_API_KEY=your-project-api-key
-OPENAI_MODEL=gpt-5
+OPENAI_MODEL=gpt-5.6-luna
 ```
 
 Run the Next.js development server:
@@ -111,4 +111,4 @@ npx wrangler secret put OPENAI_API_KEY
 npm run deploy
 ```
 
-`OPENAI_MODEL` is a non-secret Worker variable configured in `wrangler.jsonc`. Never commit `.dev.vars`, credentials, submitted memo content, or model responses.
+`OPENAI_MODEL` is a non-secret Worker variable configured in `wrangler.jsonc`. The Build Week configuration uses `gpt-5.6-luna` with reasoning effort `none`; the strict schema and server-side validation remain the output boundary. Never commit `.dev.vars`, credentials, submitted memo content, or model responses.

@@ -48,7 +48,7 @@ describe("analyzeDecision", () => {
     expect(request).toMatchObject({
       model: "test-model",
       store: false,
-      reasoning: { effort: "minimal" },
+      reasoning: { effort: "none" },
       input: [{ role: "user", content: [{ type: "input_text", text: args.memo }] }],
       text: { format: { type: "json_schema", name: "decision_trace", strict: true } },
     });

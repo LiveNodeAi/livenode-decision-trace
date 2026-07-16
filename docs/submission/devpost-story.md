@@ -10,7 +10,7 @@ The same result can then be copied in two forms. Decision Trace Markdown is desi
 
 # How we built it
 
-We built a one-page Next.js and TypeScript application and deployed it to Cloudflare Workers through OpenNext. The Worker validates the memo, applies an IP-based rate limit, and calls the OpenAI Responses API with a strict structured-output schema. Zod validates the returned object before it reaches the interface. Markdown generation is deterministic and runs from the validated result.
+We built a one-page Next.js and TypeScript application and deployed it to Cloudflare Workers through OpenNext. The Worker validates the memo, applies an IP-based rate limit, and calls `gpt-5.6-luna` through the OpenAI Responses API with reasoning effort `none` and a strict structured-output schema. Zod validates the returned object before it reaches the interface. Markdown generation is deterministic and runs from the validated result.
 
 The application is deliberately stateless: there is no account, database, or memo analytics. The browser sends the memo only to a same-origin endpoint, the server sends it to OpenAI for processing, and public error codes prevent provider details or secrets from leaking to the client. Vitest covers the schema, validation, route behavior, and Markdown output; Playwright covers the complete browser flow and responsive layout.
 
