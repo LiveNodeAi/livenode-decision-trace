@@ -4,13 +4,20 @@ Verified on 2026-07-16 (Asia/Tokyo).
 
 Public URL: <https://livenode-decision-trace.takahiro-nochi.workers.dev>
 
-Cloudflare Worker version: `d9ea7075-8da9-4ac6-8414-729dd8ca8d2d`
+Cloudflare Worker version: `a7e0b721-70aa-4942-a8ed-7c85574d4d06`
 
 No submitted memo text or model output is stored in this document or the screenshots.
 
 ## Evidence scope
 
-The current production Worker `d9ea7075-8da9-4ac6-8414-729dd8ca8d2d` was deployed from HEAD `336434ff5fc62423c46ba5a9795275ae24b08e0e`. The successful timings previously recorded for Worker `713f0889-aad7-47b8-b5fd-eb3c1abfa03c` are historical only and are not reused as current-version evidence. The current acceptance stopped at the first failed assigned probe, so the deployment is **BLOCKED** rather than submission-ready.
+The current production Worker `a7e0b721-70aa-4942-a8ed-7c85574d4d06` was deployed from commit `47a70f65c5b91bb0851da7d15743d0cf558c9029`. It uses a provider-compatible union-free structural schema followed by the unchanged strict local provenance and memo-grounding checks. Its product canary returned `ANALYSIS_COULD_NOT_GROUND`, so the remaining four acceptance generations were not run. Older Worker timings are historical only and are not reused as current-version evidence.
+
+## Provider-schema compatibility canary
+
+- Product sample: HTTP 422, `ANALYSIS_COULD_NOT_GROUND`, 15,901 ms, no trace, exposure-safe.
+- The canary was the only generation against this Worker. No retry or fallback was made.
+- Japanese free-form, benign English free-form, desktop public-policy, and mobile operations checks were not run because the canary gate failed.
+- Status: **BLOCKED**.
 
 ## Deployment
 
@@ -77,7 +84,7 @@ Non-sensitive input-state screenshots:
 
 ## Acceptance summary
 
-The current Worker is **not submission-ready** because its assigned production acceptance stopped on the English free-form HTTP 502. The older Worker `713f0889-aad7-47b8-b5fd-eb3c1abfa03c` passed its historical acceptance set, but that evidence does not qualify the current deployment.
+The current Worker is **not submission-ready** because its product canary returned `ANALYSIS_COULD_NOT_GROUND`. Older production evidence does not qualify this deployment.
 
 Submission artifacts still pending:
 

@@ -203,3 +203,14 @@ High-impact notice verification without another generation:
 Remaining blocker:
 - Diagnose and fix the current production generation failure, redeploy, and repeat the exact-five acceptance from the beginning.
 - Submission artifacts remain pending: 3:2 thumbnail, recorded 60–90 second demo and public video URL, and public source repository link.
+
+## Provider-schema compatibility deployment (2026-07-16)
+
+Status: BLOCKED
+
+- Commit: `47a70f65c5b91bb0851da7d15743d0cf558c9029`
+- Worker version: `a7e0b721-70aa-4942-a8ed-7c85574d4d06`
+- Provider schema now contains no grounded-item `oneOf`/`anyOf`; strict local provenance and memo-grounding validation remain in place with the same bounds.
+- Local verification: targeted 34/34, full Vitest 81/81, Playwright 2/2, production build PASS, diff check PASS, secret scan 73 files/0 matches.
+- Product canary: HTTP 422, `ANALYSIS_COULD_NOT_GROUND`, 15,901 ms, no trace, exposure-safe.
+- The canary was the only live generation. No retry/fallback occurred; the remaining four acceptance checks were not run.
