@@ -4,13 +4,13 @@ Verified on 2026-07-16 (Asia/Tokyo).
 
 Public URL: <https://livenode-decision-trace.takahiro-nochi.workers.dev>
 
-Cloudflare Worker version: `713f0889-aad7-47b8-b5fd-eb3c1abfa03c`
+Cloudflare Worker version: `d9ea7075-8da9-4ac6-8414-729dd8ca8d2d`
 
 No submitted memo text or model output is stored in this document or the screenshots.
 
 ## Evidence scope
 
-The live timings and UI evidence below belong to the last deployed Worker `713f0889-aad7-47b8-b5fd-eb3c1abfa03c`, produced by the GPT-5.6 migration/evidence commits through `84e8dbd` and `e7ee5ad`. Current local branch changes beginning with `e496436`, `029d838`, and later commits are **not deployed** and have only local automated evidence. Production redeployment and acceptance remain pending.
+The current production Worker `d9ea7075-8da9-4ac6-8414-729dd8ca8d2d` was deployed from HEAD `336434ff5fc62423c46ba5a9795275ae24b08e0e`. The successful timings previously recorded for Worker `713f0889-aad7-47b8-b5fd-eb3c1abfa03c` are historical only and are not reused as current-version evidence. The current acceptance stopped at the first failed assigned probe, so the deployment is **BLOCKED** rather than submission-ready.
 
 ## Deployment
 
@@ -33,17 +33,18 @@ For the current-model migration, RED showed two expected failures: the request s
 
 | Input | HTTP | Duration | Six sections | Language |
 | --- | ---: | ---: | ---: | --- |
-| Product sample | 200 | 9,476 ms | Yes | Japanese |
-| Japanese free-form | 200 | 6,840 ms | Yes | Japanese |
-| English free-form | 200 | 4,813 ms | Yes | English |
-| Desktop 1440 UI — Public-policy sample (`public-policy`) | 200 | 7,817 ms | Yes | Japanese |
-| Mobile 375 UI — Operations sample (`operations`) | 200 | 8,180 ms | Yes | Japanese |
+| Product sample | 200 | 10,330 ms | Yes | Japanese |
+| Japanese free-form | 200 | 7,789 ms | Yes | Japanese |
+| English free-form | 502 | 685 ms | No | — |
+| Desktop 1440 UI — Public-policy sample (`public-policy`) | Not run | — | — | — |
+| Mobile 375 UI — Operations sample (`operations`) | Not run | — | — | — |
 
-Status: **PASS**. Exactly five generations were run against Worker `713f0889-aad7-47b8-b5fd-eb3c1abfa03c`; all returned HTTP 200 with six sections below 28 seconds. No older deployment timings are reused and no retries or fallback model probes were made.
+Status: **BLOCKED**. The assigned sequence stopped immediately when the English free-form probe returned HTTP 502, as required. The desktop and mobile probes were not run. The acceptance harness made no retries and used no fallback model. The public error boundary intentionally withholds provider and internal diagnostic detail, so the exact internal rejection cause is not asserted here.
 
 ## Privacy and response exposure
 
-- All inspected success and error responses had no API-key-shaped value, provider error detail, stack trace, or submitted memo exposure.
+- Both inspected success responses had the expected trace shape and no API-key-shaped value, provider error detail, stack trace, or submitted memo exposure.
+- The English failure returned only the public error boundary; the harness did not log its response body, submitted memo, or any model output.
 - The checked-in source and generated client assets are scanned separately during final verification for the local secret value.
 - Browser network checks were performed without storing response bodies or memo content in artifacts.
 
@@ -51,10 +52,10 @@ Status: **PASS**. Exactly five generations were run against Worker `713f0889-aad
 
 | Viewport | HTTP | Duration | Six cards | Overflow | Decision Trace headings | KX Note headings |
 | --- | ---: | ---: | ---: | --- | --- | --- |
-| 1440 × 1000 — Public-policy sample (`public-policy`) | 200 | 7,817 ms | 6 | No | PASS | PASS |
-| 375 × 812 — Operations sample (`operations`) | 200 | 8,180 ms | 6 | No | PASS | PASS |
+| 1440 × 1000 — Public-policy sample (`public-policy`) | Not run | — | — | — | — | — |
+| 375 × 812 — Operations sample (`operations`) | Not run | — | — | — | — | — |
 
-Both current-version UI checks observed exactly one API request, rendered six cards, produced distinct non-empty Decision Trace and KX Note exports with every required heading, stayed within the viewport with no horizontal overflow, and exposed no submitted memo, provider detail, stack, or key-shaped field in the response.
+No current-version live UI generation was run after the API failure. The high-impact bilingual notice was instead verified without another OpenAI request: both notice paths are present in the deployed static chunk, and the existing mocked UI regression test verifies that the notice is visible while both Markdown exports remain available. This is static/local evidence, not a substitute for the stopped live UI acceptance.
 
 Non-sensitive input-state screenshots:
 
@@ -76,11 +77,11 @@ Non-sensitive input-state screenshots:
 
 ## Acceptance summary
 
-The last deployed Worker evidence passed its assigned acceptance set. The current local branch is **not submission-ready** until it is redeployed and accepted in production.
+The current Worker is **not submission-ready** because its assigned production acceptance stopped on the English free-form HTTP 502. The older Worker `713f0889-aad7-47b8-b5fd-eb3c1abfa03c` passed its historical acceptance set, but that evidence does not qualify the current deployment.
 
 Submission artifacts still pending:
 
 - 3:2 project thumbnail
 - recorded 60–90 second demo video and a public video URL
 - public source repository link
-- production redeployment of the current local HEAD and fresh acceptance evidence
+- production diagnosis/fix followed by redeployment and a fresh exact-five acceptance

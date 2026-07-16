@@ -174,3 +174,32 @@ Local automated evidence:
 - Semantic-grounding targeted suite: 15/15 PASS after RED showed hallucinated evidence, link excerpt, and link label acceptance.
 - Full Vitest: 67/67 PASS.
 - Playwright: 2/2 PASS with the coherent Japanese fixture.
+
+## Safety-hardening production deployment (2026-07-16)
+
+Status: BLOCKED
+
+Deployment:
+- Public URL unchanged: https://livenode-decision-trace.takahiro-nochi.workers.dev
+- Worker version: `d9ea7075-8da9-4ac6-8414-729dd8ca8d2d`
+- Deployed HEAD: `336434ff5fc62423c46ba5a9795275ae24b08e0e`
+- Existing `OPENAI_API_KEY` secret remained protected and was not printed or recommitted.
+- Deployment output confirmed `OPENAI_MODEL ("gpt-5.6-luna")`.
+
+Current-version production acceptance:
+- Product API: HTTP 200, 10,330 ms, six sections, Japanese, exposure-safe success shape.
+- Japanese free-form API: HTTP 200, 7,789 ms, six sections, Japanese, exposure-safe success shape.
+- English free-form API: HTTP 502, 685 ms, no trace.
+- Desktop public-policy UI: not run.
+- Mobile operations UI: not run.
+
+The harness stopped immediately at the English failure, made no retry, and used no fallback model. It did not log the public error body, submitted memo, or model output. Because the public error boundary intentionally hides provider/internal detail, the precise internal rejection cause is not claimed. The older Worker `713f0889-aad7-47b8-b5fd-eb3c1abfa03c` results remain historical evidence only.
+
+High-impact notice verification without another generation:
+- Both bilingual notice paths are present in the deployed static client asset.
+- The existing mocked UI regression test verifies visible notice behavior and availability of both Decision Trace and KX Note exports.
+- This static/local result does not replace the two live UI checks that were skipped after the stop condition.
+
+Remaining blocker:
+- Diagnose and fix the current production generation failure, redeploy, and repeat the exact-five acceptance from the beginning.
+- Submission artifacts remain pending: 3:2 thumbnail, recorded 60–90 second demo and public video URL, and public source repository link.
