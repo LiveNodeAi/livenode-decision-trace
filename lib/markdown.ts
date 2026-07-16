@@ -2,6 +2,7 @@ import type { DecisionTrace } from "./decision-trace-schema";
 
 type GroundedItem = DecisionTrace["assumptions"][number];
 type Language = DecisionTrace["language"];
+type MarkdownOptions = { highImpact?: boolean };
 
 const copy = {
   ja: {
@@ -35,6 +36,8 @@ const copy = {
     operationalNextActions: "運用上の次のアクション",
     consideredOptions: "検討した選択肢",
     emptyLinks: "入力文に明示された接続はありません。",
+    highImpactNotice: "この判断は医療・法律・金融に関わる可能性があります。資格を持つ専門家の確認を受けてください。本結果は専門的助言ではありません。",
+    aiSynthesis: "AIによる整理",
   },
   en: {
     traceTitle: "Decision Trace",
@@ -67,6 +70,8 @@ const copy = {
     operationalNextActions: "Operational next actions",
     consideredOptions: "Considered options",
     emptyLinks: "No explicit connections were supplied.",
+    highImpactNotice: "This decision may involve medical, legal, or financial matters. Seek review from a qualified professional. This result is not professional advice.",
+    aiSynthesis: "AI synthesis",
   },
 } as const;
 
@@ -92,7 +97,7 @@ function orderedActions(trace: DecisionTrace): string {
     .join("\n");
 }
 
-export function toDecisionTraceMarkdown(trace: DecisionTrace): string {
+export function toDecisionTraceMarkdown(trace: DecisionTrace, formatOptions: MarkdownOptions = {}): string {
   const labels = copy[trace.language];
   const options = trace.options
     .map(
@@ -101,7 +106,9 @@ export function toDecisionTraceMarkdown(trace: DecisionTrace): string {
     )
     .join("\n\n");
 
+  const notice = formatOptions.highImpact ? `\n> ${labels.highImpactNotice}\n` : "";
   return `# ${labels.traceTitle}
+${notice}
 
 ## ${labels.situation}
 
@@ -139,12 +146,12 @@ ${orderedActions(trace)}
 `;
 }
 
-export function toKxNoteMarkdown(trace: DecisionTrace): string {
+export function toKxNoteMarkdown(trace: DecisionTrace, formatOptions: MarkdownOptions = {}): string {
   const labels = copy[trace.language];
   const explicitLinks = trace.links.length
     ? trace.links.map((link) => `- **${link.label}** — ${link.relationship}: “${link.sourceExcerpt}”`).join("\n")
     : `- ${labels.emptyLinks}`;
-  const suppliedFacts = trace.situation.context;
+  const suppliedFacts = trace.situation.context.filter((item) => !item.inference);
   const evidence = [...trace.recommendation.reasoning, ...trace.criteria, ...trace.situation.context].map((item) =>
     groundedLine(item, trace.language),
   );
@@ -155,7 +162,7 @@ export function toKxNoteMarkdown(trace: DecisionTrace): string {
       `${labels.risks}: ${option.risks.length ? option.risks.join("; ") : labels.none}`,
       `${labels.reversible}: ${option.reversible ? labels.yes : labels.no}`,
     ].join(" | ");
-    return `- **${option.name}** — ${details}`;
+    return `- [${labels.aiSynthesis}] **${option.name}** — ${details}`;
   });
   const constraints = [
     ...trace.assumptions.map((item) => groundedLine(item, trace.language)),
@@ -166,7 +173,9 @@ export function toKxNoteMarkdown(trace: DecisionTrace): string {
     ...trace.recommendation.changeConditions.map((condition) => `- ${labels.changeConditions}: ${condition}`),
   ];
 
+  const notice = formatOptions.highImpact ? `\n> ${labels.highImpactNotice}\n` : "";
   return `# ${labels.kxTitle}
+${notice}
 
 ## ${labels.claim}
 
@@ -179,7 +188,7 @@ ${evidence.length ? evidence.join("\n") : `- ${labels.none}`}
 
 ## ${labels.data}
 
-- ${labels.decision}: ${trace.situation.decision}
+- [${labels.aiSynthesis}: ${labels.decision}] ${trace.situation.decision}
 ${groundedList(suppliedFacts, trace.language)}
 
 ### ${labels.consideredOptions}

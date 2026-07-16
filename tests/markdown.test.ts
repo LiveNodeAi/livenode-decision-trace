@@ -25,12 +25,23 @@ const trace: DecisionTrace = {
 
 const englishTrace: DecisionTrace = { ...trace, language: "en", links: [] };
 const japaneseTraceWithoutLinks: DecisionTrace = { ...trace, links: [] };
-const traceWithUngroundedReasoningAndCriteria: DecisionTrace = {
+const traceWithUngroundedReasoningAndCriteria = {
   ...trace,
-  criteria: [{ text: "導入後の運用が簡単である", evidence: null, inference: false }],
+  criteria: [{ text: "導入後の運用が簡単である", evidence: null, inference: true as const }],
   recommendation: {
     ...trace.recommendation,
-    reasoning: [{ text: "小さく始めれば撤退できる", evidence: null, inference: true }],
+    reasoning: [{ text: "小さく始めれば撤退できる", evidence: null, inference: true as const }],
+  },
+};
+
+const traceWithInferredContext = {
+  ...trace,
+  situation: {
+    ...trace.situation,
+    context: [
+      ...trace.situation.context,
+      { text: "将来の需要は増える", evidence: null, inference: true as const },
+    ],
   },
 };
 
@@ -81,6 +92,7 @@ it("places confidence in Claim, options in Data, and assumptions in Constraints"
   expect(data).toContain("利用者から要望がある");
   expect(data).toContain("今期に実装");
   expect(data).toContain("来期に延期");
+  expect(data).toContain("AIによる整理");
   expect(data).not.toContain("開発時間を確保できる");
   expect(constraints).toContain("開発時間を確保できる");
   expect(constraints).toContain("他の開発が遅れる");
@@ -95,7 +107,7 @@ it("uses exact localized empty-link fallbacks", () => {
 });
 
 it("keeps Claim minimal and preserves ungrounded reasoning and criteria in Evidence", () => {
-  const markdown = toKxNoteMarkdown(traceWithUngroundedReasoningAndCriteria);
+  const markdown = toKxNoteMarkdown(traceWithUngroundedReasoningAndCriteria as DecisionTrace);
   const claim = markdown.match(/## 主張([\s\S]*?)## 根拠/)?.[1] ?? "";
   const evidence = markdown.match(/## 根拠([\s\S]*?)## データ/)?.[1] ?? "";
   const constraints = markdown.match(/## 制約([\s\S]*?)## リンク/)?.[1] ?? "";
@@ -104,8 +116,25 @@ it("keeps Claim minimal and preserves ungrounded reasoning and criteria in Evide
   expect(claim).toContain("確信度: 中");
   expect(claim).not.toContain("小さく始めれば撤退できる");
   expect(evidence).toContain("小さく始めれば撤退できる [推論]");
-  expect(evidence).toContain("導入後の運用が簡単である");
+  expect(evidence).toContain("導入後の運用が簡単である [推論]");
   expect(evidence).toContain("利用者から要望がある — 根拠: 面談記録");
   expect(evidence).not.toContain("開発時間を確保できる");
   expect(constraints).toContain("開発時間を確保できる [推論]");
+});
+
+it("never presents inferred context as supplied KX Data", () => {
+  const markdown = toKxNoteMarkdown(traceWithInferredContext);
+  const data = markdown.match(/## データ([\s\S]*?)## 制約/)?.[1] ?? "";
+
+  expect(data).toContain("利用者から要望がある");
+  expect(data).toContain("AIによる整理: 判断");
+  expect(data).not.toContain("将来の需要は増える");
+  expect(markdown).toContain("将来の需要は増える [推論]");
+});
+
+it("adds qualified-review notices to both exports for high-impact decisions", () => {
+  expect(toDecisionTraceMarkdown(trace, { highImpact: true })).toContain("専門家の確認");
+  expect(toDecisionTraceMarkdown(trace, { highImpact: true })).toContain("専門的助言ではありません");
+  expect(toKxNoteMarkdown({ ...trace, language: "en" }, { highImpact: true })).toContain("qualified professional");
+  expect(toKxNoteMarkdown({ ...trace, language: "en" }, { highImpact: true })).toContain("not professional advice");
 });

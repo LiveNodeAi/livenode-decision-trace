@@ -35,10 +35,11 @@ function GroundedList({ items, language }: { items: GroundedItem[]; language: De
 
 type ResultPanelProps = {
   trace: DecisionTrace;
+  highImpact: boolean;
   onReset: () => void;
 };
 
-export function ResultPanel({ trace, onReset }: ResultPanelProps) {
+export function ResultPanel({ trace, highImpact, onReset }: ResultPanelProps) {
   const [copyNotice, setCopyNotice] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const ja = trace.language === "ja";
   const labels = ja
@@ -71,8 +72,17 @@ export function ResultPanel({ trace, onReset }: ResultPanelProps) {
         <p>{ja ? "確信度" : "Confidence"}: {confidence[trace.language][trace.recommendation.confidence]}</p></div>
       </header>
 
+      {highImpact ? (
+        <p role="note" className="high-impact-notice">
+          {ja
+            ? "この判断は医療・法律・金融に関わる可能性があります。資格を持つ専門家の確認を受けてください。本結果は専門的助言ではありません。"
+            : "This decision may involve medical, legal, or financial matters. Seek review from a qualified professional. This result is not professional advice."}
+        </p>
+      ) : null}
+
       <div className="trace-grid">
         <TraceCard index={1} title={labels[0]}>
+          <p><strong>{ja ? "AIによる要約" : "AI summary"}</strong></p>
           <p><strong>{ja ? "判断" : "Decision"}:</strong> {trace.situation.decision}</p>
           <GroundedList items={trace.situation.context} language={trace.language} />
         </TraceCard>
@@ -83,6 +93,7 @@ export function ResultPanel({ trace, onReset }: ResultPanelProps) {
           <GroundedList items={trace.criteria} language={trace.language} />
         </TraceCard>
         <TraceCard index={4} title={labels[3]}>
+          <p><strong>{ja ? "AIによる選択肢整理" : "AI-organized options"}</strong></p>
           {trace.options.map((option) => (
             <article key={option.name}>
               <h3>{option.name}</h3>
@@ -94,12 +105,14 @@ export function ResultPanel({ trace, onReset }: ResultPanelProps) {
           ))}
         </TraceCard>
         <TraceCard index={5} title={labels[4]}>
+          <p><strong>{ja ? "AIによる推奨" : "AI recommendation"}</strong></p>
           <p><strong>{trace.recommendation.option}</strong></p>
           <GroundedList items={trace.recommendation.reasoning} language={trace.language} />
           <h3>{ja ? "判断を変える条件" : "Change conditions"}</h3>
           <ul>{trace.recommendation.changeConditions.map((item) => <li key={item}>{item}</li>)}</ul>
         </TraceCard>
         <TraceCard index={6} title={labels[5]}>
+          <p><strong>{ja ? "AIによるアクション案" : "AI-proposed actions"}</strong></p>
           <ol>
             {[...trace.nextActions].sort((a, b) => a.order - b.order).map((item) => (
               <li key={`${item.order}-${item.action}`}>{item.action}</li>
@@ -109,10 +122,10 @@ export function ResultPanel({ trace, onReset }: ResultPanelProps) {
       </div>
 
       <div className="result-actions" aria-label={ja ? "結果の操作" : "Result actions"}>
-        <button type="button" onClick={async () => await copy(toDecisionTraceMarkdown(trace), "Decision Trace")}>
+        <button type="button" onClick={async () => await copy(toDecisionTraceMarkdown(trace, { highImpact }), "Decision Trace")}>
           {ja ? "Decision Traceをコピー" : "Copy Decision Trace"}
         </button>
-        <button type="button" onClick={async () => await copy(toKxNoteMarkdown(trace), "KX Note")}>
+        <button type="button" onClick={async () => await copy(toKxNoteMarkdown(trace, { highImpact }), "KX Note")}>
           {ja ? "KX Noteをコピー" : "Copy KX Note"}
         </button>
         <button type="button" onClick={onReset}>{ja ? "最初からやり直す" : "Start over"}</button>

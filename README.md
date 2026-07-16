@@ -60,6 +60,9 @@ Browser (Next.js UI)
 
 - A submitted memo is sent from the browser to the same-origin Worker and then to OpenAI for processing.
 - The application does not persist memo text and does not include memo text in application logs or analytics.
+- Supplied facts require a verbatim evidence excerpt; AI inferences cannot carry or appear as supplied evidence. KX Data includes supplied context only.
+- Explicit core medical, legal, or financial terms trigger a deterministic qualified-human-review notice in the UI and both Markdown exports. The notice is computed from the input, not by the model, and the result is not professional advice.
+- Request bodies are capped at 50,000 bytes before JSON parsing, including requests with absent or inaccurate `Content-Length` headers.
 - The OpenAI API key is read only from the server-side Worker environment and is never returned to the browser.
 - Provider error details are converted to small public error codes before a response reaches the client.
 - Model output is schema-validated and rendered as text, not raw HTML.

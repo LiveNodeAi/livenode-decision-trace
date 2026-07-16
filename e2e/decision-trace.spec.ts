@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const trace = {
-  language: "en",
+  language: "ja",
   situation: { decision: "2地域で実証する", context: [{ text: "移動ログが集中", evidence: "移動ログ312件", inference: false }] },
   assumptions: [{ text: "既存予算で実施可能", evidence: null, inference: true }],
   criteria: [{ text: "安全性を優先", evidence: "判断基準は安全性", inference: false }],
@@ -27,7 +27,7 @@ test("sampleから生成し、6要素をコピーしてリセットできる", a
     });
   });
   await page.route("**/api/analyze", async (route) => {
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ trace }) });
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ trace, highImpact: false }) });
   });
   await page.goto("/");
 
@@ -40,21 +40,21 @@ test("sampleから生成し、6要素をコピーしてリセットできる", a
   const cards = page.getByTestId("trace-section");
   await expect(cards).toHaveCount(6);
   for (let index = 0; index < 6; index += 1) await expect(cards.nth(index)).toBeVisible();
-  const copyTrace = page.getByRole("button", { name: "Copy Decision Trace" });
-  const copyKx = page.getByRole("button", { name: "Copy KX Note" });
-  const reset = page.getByRole("button", { name: "Start over" });
+  const copyTrace = page.getByRole("button", { name: "Decision Traceをコピー" });
+  const copyKx = page.getByRole("button", { name: "KX Noteをコピー" });
+  const reset = page.getByRole("button", { name: "最初からやり直す" });
   await expect(copyTrace).toBeVisible();
   await expect(copyKx).toBeVisible();
   await expect(reset).toBeVisible();
   await copyTrace.click();
-  await expect(page.getByRole("status")).toContainText("copied");
+  await expect(page.getByRole("status")).toContainText("コピーしました");
   await copyKx.click();
   await expect(page.getByRole("status")).toContainText("KX Note");
   const payloads = await page.evaluate(() => (window as typeof window & { __clipboardWrites: string[] }).__clipboardWrites);
   expect(payloads).toHaveLength(2);
-  expect(payloads[0]).toContain("## Situation");
-  expect(payloads[0]).toContain("## Next actions");
-  for (const heading of ["Claim", "Evidence", "Data", "Constraints", "Links"]) {
+  expect(payloads[0]).toContain("## 状況");
+  expect(payloads[0]).toContain("## 次のアクション");
+  for (const heading of ["主張", "根拠", "データ", "制約", "リンク"]) {
     expect(payloads[1]).toContain(`## ${heading}`);
   }
   expect(payloads[0].length).toBeGreaterThan(0);

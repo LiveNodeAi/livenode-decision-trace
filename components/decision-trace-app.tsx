@@ -10,12 +10,13 @@ import { ResultPanel } from "./result-panel";
 type AppState =
   | { status: "input"; memo: string; error: string | null }
   | { status: "generating"; memo: string }
-  | { status: "result"; memo: string; trace: DecisionTrace }
+  | { status: "result"; memo: string; trace: DecisionTrace; highImpact: boolean }
   | { status: "error"; memo: string; error: string };
 
 const errors: Record<string, string> = {
   MEMO_TOO_SHORT: "判断の背景が分かるように、80文字以上で入力してください。",
   MEMO_TOO_LONG: "入力は12,000文字以内にしてください。",
+  REQUEST_TOO_LARGE: "送信サイズが大きすぎます。入力を短くして、もう一度試してください。",
   RATE_LIMITED: "利用回数の上限に達しました。少し待ってから、もう一度試してください。",
   ANALYSIS_TIMEOUT: "分析に時間がかかりすぎました。入力内容は残っています。もう一度試してください。",
   ANALYSIS_UNAVAILABLE: "現在、分析を完了できませんでした。入力内容は残っています。もう一度試してください。",
@@ -58,7 +59,10 @@ export function DecisionTraceApp() {
         setState({ status: "error", memo, error: errors.MALFORMED_RESPONSE });
         return;
       }
-      setState({ status: "result", memo, trace: trace.data });
+      const highImpact = typeof body === "object" && body !== null && "highImpact" in body
+        ? body.highImpact === true
+        : false;
+      setState({ status: "result", memo, trace: trace.data, highImpact });
     } catch {
       setState({ status: "error", memo, error: errors.ANALYSIS_UNAVAILABLE });
     }
@@ -67,7 +71,7 @@ export function DecisionTraceApp() {
   return (
     <>
       {state.status === "result" ? (
-        <ResultPanel trace={state.trace} onReset={() => setState({ status: "input", memo: "", error: null })} />
+        <ResultPanel trace={state.trace} highImpact={state.highImpact} onReset={() => setState({ status: "input", memo: "", error: null })} />
       ) : (
         <InputPanel
           memo={state.memo}

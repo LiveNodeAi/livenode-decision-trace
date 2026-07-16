@@ -96,13 +96,53 @@ describe("POST /api/analyze", () => {
     const response = await POST(request({ memo: `  ${"a".repeat(80)}  ` }));
 
     expect(response.status).toBe(200);
-    expect(await body(response)).toEqual({ trace });
+    expect(await body(response)).toEqual({ trace, highImpact: false });
     expect(limiter.limit).toHaveBeenCalledWith({ key: "analyze:unknown" });
     expect(analyzeDecision).toHaveBeenCalledWith(expect.objectContaining({
       memo: "a".repeat(80),
       model: "test-model",
       client: expect.objectContaining({ create: expect.any(Function) }),
     }));
+  });
+
+  it("deterministically flags explicit medical, legal, and financial memos", async () => {
+    analyzeDecision.mockResolvedValue(trace);
+    for (const memo of [
+      `医療の治療方針を検討する。${"a".repeat(80)}`,
+      `We need legal advice about a contract. ${"a".repeat(80)}`,
+      `投資判断を検討する。${"a".repeat(80)}`,
+    ]) {
+      const response = await POST(request({ memo }));
+      expect(response.status).toBe(200);
+      expect(await body(response)).toEqual({ trace, highImpact: true });
+    }
+  });
+
+  it("rejects an oversized declared Content-Length before runtime bindings", async () => {
+    const response = await POST(new Request("https://example.test/api/analyze", {
+      method: "POST",
+      headers: { "content-type": "application/json", "content-length": "50001" },
+      body: JSON.stringify({ memo: "a".repeat(80) }),
+    }));
+
+    expect(response.status).toBe(413);
+    expect(await body(response)).toEqual({ error: "REQUEST_TOO_LARGE" });
+    expect(getRuntimeEnv).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["without Content-Length", {}],
+    ["with a lying Content-Length", { "content-length": "10" }],
+  ])("rejects an oversized streamed body %s before JSON parsing", async (_label, extraHeaders) => {
+    const response = await POST(new Request("https://example.test/api/analyze", {
+      method: "POST",
+      headers: { "content-type": "application/json", ...extraHeaders },
+      body: JSON.stringify({ memo: "界".repeat(17_000) }),
+    }));
+
+    expect(response.status).toBe(413);
+    expect(await body(response)).toEqual({ error: "REQUEST_TOO_LARGE" });
+    expect(getRuntimeEnv).not.toHaveBeenCalled();
   });
 
   it("maps provider timeout to a public timeout response", async () => {

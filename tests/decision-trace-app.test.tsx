@@ -85,7 +85,7 @@ describe("DecisionTraceApp", () => {
   });
 
   it("renders exactly six named sections, confidence, and grounding labels", async () => {
-    fetchMock.mockResolvedValue(response(200, { trace }));
+    fetchMock.mockResolvedValue(response(200, { trace, highImpact: false }));
     render(<DecisionTraceApp />);
     await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
     await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));
@@ -98,13 +98,33 @@ describe("DecisionTraceApp", () => {
     expect(screen.getByText("確信度: 高")).toBeInTheDocument();
     expect(screen.getAllByText("入力からの根拠").length).toBeGreaterThan(0);
     expect(screen.getAllByText("AIによる推論").length).toBeGreaterThan(0);
+    expect(screen.getByText("AIによる要約")).toBeInTheDocument();
+    expect(screen.getByText("AIによる選択肢整理")).toBeInTheDocument();
+    expect(screen.getByText("AIによる推奨")).toBeInTheDocument();
+    expect(screen.getByText("AIによるアクション案")).toBeInTheDocument();
+  });
+
+  it("shows and exports a qualified-review notice for high-impact decisions", async () => {
+    fetchMock.mockResolvedValue(response(200, { trace, highImpact: true }));
+    render(<DecisionTraceApp />);
+    await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
+    await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));
+
+    expect(await screen.findByRole("note")).toHaveTextContent("専門家の確認");
+    expect(screen.getByRole("note")).toHaveTextContent("専門的助言ではありません");
+    await userEvent.click(screen.getByRole("button", { name: "Decision Traceをコピー" }));
+    await userEvent.click(screen.getByRole("button", { name: "KX Noteをコピー" }));
+    expect(writeText.mock.calls[0][0]).toContain("専門家の確認");
+    expect(writeText.mock.calls[1][0]).toContain("専門家の確認");
   });
 
   it.each([
     [429, "利用回数の上限"],
     [504, "時間がかかりすぎました"],
+    [413, "送信サイズが大きすぎます"],
   ])("retains the memo and offers retry guidance after %i", async (status, message) => {
-    fetchMock.mockResolvedValue(response(status, { error: status === 429 ? "RATE_LIMITED" : "ANALYSIS_TIMEOUT" }));
+    const error = status === 429 ? "RATE_LIMITED" : status === 413 ? "REQUEST_TOO_LARGE" : "ANALYSIS_TIMEOUT";
+    fetchMock.mockResolvedValue(response(status, { error }));
     render(<DecisionTraceApp />);
     await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
     await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));

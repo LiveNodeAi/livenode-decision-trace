@@ -1,10 +1,17 @@
 import { z } from "zod";
 
-const groundedItemSchema = z.object({
-  text: z.string().min(1),
-  evidence: z.string().min(1).nullable(),
-  inference: z.boolean(),
-});
+const groundedItemSchema = z.discriminatedUnion("inference", [
+  z.object({
+    text: z.string().min(1),
+    evidence: z.string().min(1),
+    inference: z.literal(false),
+  }),
+  z.object({
+    text: z.string().min(1),
+    evidence: z.null(),
+    inference: z.literal(true),
+  }),
+]);
 
 const optionSchema = z.object({
   name: z.string().min(1),

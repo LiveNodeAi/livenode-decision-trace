@@ -24,6 +24,17 @@ const trace: DecisionTrace = {
 };
 
 describe("Decision Trace output bounds", () => {
+  it("requires evidence for supplied facts and forbids evidence on inference", () => {
+    expect(decisionTraceSchema.safeParse({
+      ...trace,
+      criteria: [{ text: "Unsupported supplied fact", evidence: null, inference: false }],
+    }).success).toBe(false);
+    expect(decisionTraceSchema.safeParse({
+      ...trace,
+      assumptions: [{ text: "Inference", evidence: "not supplied", inference: true }],
+    }).success).toBe(false);
+  });
+
   it.each([
     ["context", { situation: { ...trace.situation, context: Array(4).fill(grounded) } }],
     ["assumptions", { assumptions: Array(4).fill(grounded) }],
