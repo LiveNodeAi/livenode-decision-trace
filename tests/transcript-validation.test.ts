@@ -84,6 +84,22 @@ describe("validateSourceRanges", () => {
     ).toMatchObject({ ok: false, code: "INVALID_SOURCE_RANGE" });
   });
 
+  it.each([
+    ["null range", null],
+    ["empty range", {}],
+    ["null excerpt", { start: 0, end: 1, excerpt: null }],
+  ])("rejects malformed %s without throwing", (_label, malformedRange) => {
+    const malformedTopic = {
+      ...topic(),
+      ranges: [malformedRange],
+    } as unknown as DetectedTopic;
+
+    expect(validateSourceRanges("abcdef", [malformedTopic])).toEqual({
+      ok: false,
+      code: "INVALID_SOURCE_RANGE",
+    });
+  });
+
   it("rejects duplicate topic IDs and six topics", () => {
     expect(validateSourceRanges("a", [topic(), topic()])).toMatchObject({
       ok: false,

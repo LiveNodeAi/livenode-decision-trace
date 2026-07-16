@@ -76,16 +76,31 @@ export function validateSourceRanges(
     }
     topicIds.add(topic.id);
 
-    if (
-      topic.ranges.length > MAX_RANGES_PER_TOPIC ||
-      topic.ranges.reduce((total, range) => total + range.excerpt.length, 0) >
-        MAX_QUOTED_CHARACTERS_PER_TOPIC
-    ) {
+    if (topic.ranges.length > MAX_RANGES_PER_TOPIC) {
       return { ok: false, code: "INVALID_SOURCE_RANGE" };
     }
 
-    for (const range of topic.ranges) {
+    let quotedCharacters = 0;
+    for (const candidate of topic.ranges as unknown[]) {
       if (
+        typeof candidate !== "object" ||
+        candidate === null ||
+        !("start" in candidate) ||
+        !("end" in candidate) ||
+        !("excerpt" in candidate) ||
+        typeof candidate.start !== "number" ||
+        typeof candidate.end !== "number" ||
+        !Number.isInteger(candidate.start) ||
+        !Number.isInteger(candidate.end) ||
+        typeof candidate.excerpt !== "string"
+      ) {
+        return { ok: false, code: "INVALID_SOURCE_RANGE" };
+      }
+
+      const range = candidate as SourceRange;
+      quotedCharacters += range.excerpt.length;
+      if (
+        quotedCharacters > MAX_QUOTED_CHARACTERS_PER_TOPIC ||
         !Number.isInteger(range.start) ||
         !Number.isInteger(range.end) ||
         range.start < 0 ||
