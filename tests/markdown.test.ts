@@ -25,6 +25,14 @@ const trace: DecisionTrace = {
 
 const englishTrace: DecisionTrace = { ...trace, language: "en", links: [] };
 const japaneseTraceWithoutLinks: DecisionTrace = { ...trace, links: [] };
+const traceWithUngroundedReasoningAndCriteria: DecisionTrace = {
+  ...trace,
+  criteria: [{ text: "導入後の運用が簡単である", evidence: null, inference: false }],
+  recommendation: {
+    ...trace.recommendation,
+    reasoning: [{ text: "小さく始めれば撤退できる", evidence: null, inference: true }],
+  },
+};
 
 it("formats a Japanese Decision Trace with exactly six localized sections", () => {
   const markdown = toDecisionTraceMarkdown(trace);
@@ -84,4 +92,20 @@ it("places confidence in Claim, options in Data, and assumptions in Constraints"
 it("uses exact localized empty-link fallbacks", () => {
   expect(toKxNoteMarkdown(japaneseTraceWithoutLinks)).toContain("## リンク\n\n- 入力文に明示された接続はありません。");
   expect(toKxNoteMarkdown(englishTrace)).toContain("## Links\n\n- No explicit connections were supplied.");
+});
+
+it("keeps Claim minimal and preserves ungrounded reasoning and criteria in Evidence", () => {
+  const markdown = toKxNoteMarkdown(traceWithUngroundedReasoningAndCriteria);
+  const claim = markdown.match(/## 主張([\s\S]*?)## 根拠/)?.[1] ?? "";
+  const evidence = markdown.match(/## 根拠([\s\S]*?)## データ/)?.[1] ?? "";
+  const constraints = markdown.match(/## 制約([\s\S]*?)## リンク/)?.[1] ?? "";
+
+  expect(claim).toContain("今期に実装");
+  expect(claim).toContain("確信度: 中");
+  expect(claim).not.toContain("小さく始めれば撤退できる");
+  expect(evidence).toContain("小さく始めれば撤退できる [推論]");
+  expect(evidence).toContain("導入後の運用が簡単である");
+  expect(evidence).toContain("利用者から要望がある — 根拠: 面談記録");
+  expect(evidence).not.toContain("開発時間を確保できる");
+  expect(constraints).toContain("開発時間を確保できる [推論]");
 });

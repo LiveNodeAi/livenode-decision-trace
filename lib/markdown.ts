@@ -145,9 +145,9 @@ export function toKxNoteMarkdown(trace: DecisionTrace): string {
     ? trace.links.map((link) => `- **${link.label}** — ${link.relationship}: “${link.sourceExcerpt}”`).join("\n")
     : `- ${labels.emptyLinks}`;
   const suppliedFacts = trace.situation.context;
-  const evidence = [...trace.situation.context, ...trace.assumptions, ...trace.criteria, ...trace.recommendation.reasoning]
-    .filter((item) => item.evidence)
-    .map((item) => `- ${item.text} — ${labels.evidenceLabel}: ${item.evidence}`);
+  const evidence = [...trace.recommendation.reasoning, ...trace.criteria, ...trace.situation.context].map((item) =>
+    groundedLine(item, trace.language),
+  );
   const consideredOptions = trace.options.map((option) => {
     const details = [
       `${labels.benefits}: ${option.benefits.join("; ")}`,
@@ -172,7 +172,6 @@ export function toKxNoteMarkdown(trace: DecisionTrace): string {
 
 - ${trace.recommendation.option}
 - ${labels.confidence}: ${labels.confidenceValues[trace.recommendation.confidence]}
-${trace.recommendation.reasoning.map((item) => groundedLine(item, trace.language)).join("\n")}
 
 ## ${labels.evidence}
 
