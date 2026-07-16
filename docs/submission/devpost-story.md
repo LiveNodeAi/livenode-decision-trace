@@ -1,6 +1,16 @@
 # Inspiration
 
-AI can give us a recommendation in seconds, but the useful part of a real decision is often what disappears: what we knew, what we assumed, what alternatives we considered, and what evidence would make us change our mind. LiveNode is built around a simple principle: reproduce the decision process, not only the output. Decision Trace turns that principle into a small, public tool anyone can understand in one interaction.
+AI can give us a recommendation in seconds, but the useful part of a real decision is often what disappears: what we knew, what we assumed, what alternatives we considered, and what evidence would make us change our mind. LiveNode is built around a simple principle: preserve the decision process, not only the output. Decision Trace turns that principle into a small, public tool anyone can understand in one interaction.
+
+**One-line description:** LiveNode Decision Trace turns a conversation into a reusable memory of how a decision was made—not just what was decided.
+
+## Core philosophy
+
+Most AI memory systems preserve facts, summaries, and final answers. LiveNode starts from a different belief: the durable part of a person is their judgment process—the claims they considered, the evidence they trusted, the constraints they accepted, the alternatives they rejected, and the connections that shaped the decision. Capturing that process creates an intermediate layer between a general-purpose LLM and the person using it. Instead of asking the model only for the statistical center of its training, this layer can help future AI interactions lean toward that person's own reasoning and values. The result is memory for a future self: a record that explains not only what happened, but why. Because the record is portable Markdown, it can also support continuity across projects and AI tools without depending on one chat history or model provider.
+
+## 日本語訳（上記英文の正本対応）
+
+一般的なAIメモリーが残すのは、事実、要約、最終回答です。LiveNodeは、人にとって長く残すべきものは判断プロセスだと考えます。何を主張として考え、どの根拠を信じ、どんな制約を受け入れ、どの選択肢を退け、何との接続から判断したのか。その記録は、汎用LLMと利用者本人の間に置かれる中間レイヤーになります。モデルの学習データが生む統計的な中心だけに頼るのではなく、未来のAI作業を本人の経験・価値観・判断軸へ寄せるための材料になります。これは未来の自分のための記憶です。何が起きたかだけでなく、なぜそう考えたのかを残します。持ち運べるMarkdownにすることで、一つのチャット履歴やモデル提供者に依存せず、プロジェクトやAIをまたぐ継続性も支えます。
 
 # What it does
 
@@ -35,4 +45,20 @@ Structured output is most valuable when the structure reflects a real human revi
 
 # What's next
 
-The next step is to let a user edit individual trace items before export while keeping provenance intact. After that, Decision Trace could connect to a personal knowledge store, compare a new decision with earlier decisions, and surface which assumptions changed. A team version could collect independent traces before discussion, making disagreements about facts and criteria visible without turning the product into an opaque multi-agent debate.
+The project has three deliberately separate layers:
+
+- **Web demo — capture layer:** the currently implemented public experience accepts one decision memo and produces a validated Decision Trace plus two copyable Markdown formats.
+- **Local KX — working refinement layer:** the developer already uses a human-reviewed Markdown pipeline to capture, distill, and reconnect knowledge. That local workflow is not hosted by this demo.
+- **Distributable Skill — planned delivery layer:** packaging the workflow for other people, AI environments, and storage adapters is future work. Automatic installation across AI tools and direct Obsidian or Notion saving are not implemented here.
+
+This phase is implementing the next web-demo step: paste a longer transcript, review up to five detected decision topics, generate selected traces with limited parallelism, and download a browser-generated Markdown ZIP. These multi-topic and ZIP capabilities are in development and are not claimed as currently available. Later work may connect reviewed traces to personal knowledge stores and compare new decisions with earlier ones, but long-term personalization is not yet automatic.
+
+## 「What's next」日本語訳
+
+本プロジェクトは、3つの層を意図的に分けています。
+
+- **Webデモ＝取り込み層：** 現在実装済みの公開体験では、1つの判断メモから検証済みDecision Traceと、コピー可能な2種類のMarkdownを生成します。
+- **ローカルKX＝実働する精錬層：** 開発者は、人間が確認しながら知識を取り込み、蒸留し、再接続するMarkdownパイプラインをすでに実運用しています。ただし、このローカル運用はWebデモ内にホストされていません。
+- **配布Skill＝将来の提供層：** 他の利用者、AI環境、保存先へワークフローを届けるパッケージ化は今後の予定です。複数AIへの自動導入やObsidian・Notionへの直接保存は、このデモでは実装していません。
+
+現在のフェーズでは、長い文字起こしから最大5つの判断テーマを検出し、人が確認して選択したテーマを制限付きで並列生成し、ブラウザでMarkdown ZIPを作る機能を実装中です。複数テーマとZIPは開発中であり、現時点で利用可能とは説明しません。その後、確認済みTraceを個人の知識基盤へ接続し、過去の判断との比較へ広げる可能性がありますが、長期的な個人化はまだ自動化されていません。

@@ -4,6 +4,18 @@ LiveNode Decision Trace turns an unstructured decision memo into a traceable dec
 
 The public demo is a stateless Next.js application deployed to Cloudflare Workers. It accepts Japanese or English text, uses the OpenAI Responses API to produce a schema-validated result, and lets the user copy that result in two Markdown formats.
 
+## Where this demo fits
+
+LiveNode treats the decision process itself as memory: the claims considered, evidence trusted, constraints accepted, alternatives rejected, and conditions that could change the conclusion. This record is an intermediate layer between a general-purpose LLM and its user. It does not reproduce a person or guarantee their decisions; it gives future human and AI work a reviewed record that can lean toward that person's experience, values, and judgment instead of relying only on a general model's high-quality statistical average.
+
+The project has three distinct layers:
+
+1. **Public web demo — capture layer (available now):** converts one Japanese or English decision memo into a reviewed six-part Decision Trace, then produces Decision Trace Markdown and KX Note Markdown for copying.
+2. **Local KX — working refinement layer (in active use by the developer):** a human-reviewed Markdown workflow that distills conversations and reconnects durable knowledge over time. This workflow is not hosted inside the public demo.
+3. **Distributable Skill — planned delivery layer:** a future package intended to bring the workflow into other AI environments and personal knowledge stores. Cross-AI installation and automatic Obsidian or Notion saving are not implemented in the public demo.
+
+This phase is adding transcript topic detection for up to five reviewed topics, per-topic generation with limited parallelism, and a browser-generated Markdown ZIP. Those multi-topic and ZIP capabilities are **in development**, not part of the currently implemented demo described above.
+
 ## The problem
 
 AI recommendations are easy to generate but hard to audit or reuse. The conclusion often survives while the facts, assumptions, rejected options, and conditions that would change it disappear. Decision Trace makes that reasoning visible and converts it into a durable note for later human or AI use.
