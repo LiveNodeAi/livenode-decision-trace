@@ -65,7 +65,7 @@ h1 i { color: var(--amber); font-weight: 400; }
 .field-label { display: block; margin-bottom: 10px; font-weight: 650; letter-spacing: .04em; }
 textarea { width: 100%; min-height: 300px; resize: vertical; color: var(--ink); background: rgba(5,9,19,.72); border: 1px solid var(--line); border-radius: 14px; padding: 20px; line-height: 1.75; }
 textarea:hover { border-color: rgba(99,230,226,.5); }
-.field-meta { display: flex; justify-content: space-between; gap: 24px; color: var(--muted); font-size: .82rem; margin-top: 10px; }
+.field-meta { display: flex; justify-content: space-between; gap: 24px; color: var(--muted); font-size: 1rem; margin-top: 10px; }
 .field-meta p { margin-bottom: 3px; }
 #memo-count { color: var(--cyan); white-space: nowrap; font-family: ui-monospace, monospace; }
 [role="alert"] { color: var(--danger); }
@@ -90,7 +90,11 @@ textarea:hover { border-color: rgba(99,230,226,.5); }
 .trace-card li::marker { color: var(--cyan); }
 .trace-card article { border-top: 1px solid var(--line); padding-top: 8px; }
 .trace-card article:first-of-type { border-top: 0; padding-top: 0; }
-.trace-card p { overflow-wrap: anywhere; }
+.result-summary > *, .recommendation, .recommendation *, .trace-card > *, .trace-card h2, .trace-card h3, .trace-card li {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
 .result-actions { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 30px; margin-top: 30px; border-top: 1px solid var(--line); }
 
 @media (max-width: 759px) {

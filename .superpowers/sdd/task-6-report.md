@@ -30,3 +30,20 @@ Complete. Applied the LiveNode visual system and verified responsive keyboard-us
 
 - Next.js emits a non-blocking workspace-root warning because another package lock exists in the user home directory.
 - `npm install` reports two pre-existing moderate audit findings; no force-upgrade was attempted.
+
+## Fix Report
+
+Addressed all Task 6 review findings:
+
+- Raised helper, privacy, and count metadata to the 16px minimum.
+- Expanded long-content containment to recommendation text, headings, list items, and all direct card content using `min-width: 0`, `overflow-wrap: anywhere`, and `word-break`.
+- Changed the browser clipboard mock to retain both payloads and assert the complete Decision Trace and KX section structures, non-empty output, and distinct formats.
+- Asserted all six cards are visible in both viewport projects.
+- Added horizontal-overflow and bounding-box checks for all cards and result actions at 1440 x 900 and 375 x 812.
+
+Fix verification:
+
+- `npm test`: PASS, 39 tests
+- `npm run build`: PASS
+- `npx playwright test`: PASS, 2 projects
+- `git diff --check`: PASS
