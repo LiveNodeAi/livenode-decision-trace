@@ -64,23 +64,25 @@ export function ResultPanel({ trace, onReset }: ResultPanelProps) {
   }
 
   return (
-    <section aria-labelledby="result-title">
-      <h2 id="result-title">{ja ? "Decision Traceの結果" : "Decision Trace result"}</h2>
-      <p><strong>{trace.recommendation.option}</strong></p>
-      <p>{ja ? "確信度" : "Confidence"}: {confidence[trace.language][trace.recommendation.confidence]}</p>
+    <section className="result-panel" aria-labelledby="result-title">
+      <header className="result-summary">
+        <div><p className="section-label">Resolved signal</p><h2 id="result-title">{ja ? "Decision Traceの結果" : "Decision Trace result"}</h2></div>
+        <div className="recommendation"><p><strong>{trace.recommendation.option}</strong></p>
+        <p>{ja ? "確信度" : "Confidence"}: {confidence[trace.language][trace.recommendation.confidence]}</p></div>
+      </header>
 
-      <div>
-        <TraceCard title={labels[0]}>
+      <div className="trace-grid">
+        <TraceCard index={1} title={labels[0]}>
           <p><strong>{ja ? "判断" : "Decision"}:</strong> {trace.situation.decision}</p>
           <GroundedList items={trace.situation.context} language={trace.language} />
         </TraceCard>
-        <TraceCard title={labels[1]}>
+        <TraceCard index={2} title={labels[1]}>
           <GroundedList items={trace.assumptions} language={trace.language} />
         </TraceCard>
-        <TraceCard title={labels[2]}>
+        <TraceCard index={3} title={labels[2]}>
           <GroundedList items={trace.criteria} language={trace.language} />
         </TraceCard>
-        <TraceCard title={labels[3]}>
+        <TraceCard index={4} title={labels[3]}>
           {trace.options.map((option) => (
             <article key={option.name}>
               <h3>{option.name}</h3>
@@ -91,13 +93,13 @@ export function ResultPanel({ trace, onReset }: ResultPanelProps) {
             </article>
           ))}
         </TraceCard>
-        <TraceCard title={labels[4]}>
+        <TraceCard index={5} title={labels[4]}>
           <p><strong>{trace.recommendation.option}</strong></p>
           <GroundedList items={trace.recommendation.reasoning} language={trace.language} />
           <h3>{ja ? "判断を変える条件" : "Change conditions"}</h3>
           <ul>{trace.recommendation.changeConditions.map((item) => <li key={item}>{item}</li>)}</ul>
         </TraceCard>
-        <TraceCard title={labels[5]}>
+        <TraceCard index={6} title={labels[5]}>
           <ol>
             {[...trace.nextActions].sort((a, b) => a.order - b.order).map((item) => (
               <li key={`${item.order}-${item.action}`}>{item.action}</li>
@@ -106,7 +108,7 @@ export function ResultPanel({ trace, onReset }: ResultPanelProps) {
         </TraceCard>
       </div>
 
-      <div aria-label={ja ? "結果の操作" : "Result actions"}>
+      <div className="result-actions" aria-label={ja ? "結果の操作" : "Result actions"}>
         <button type="button" onClick={async () => await copy(toDecisionTraceMarkdown(trace), "Decision Trace")}>
           {ja ? "Decision Traceをコピー" : "Copy Decision Trace"}
         </button>
