@@ -6,8 +6,16 @@ export type ResponsesClient = {
   create(
     request: Record<string, unknown>,
     options?: { signal?: AbortSignal },
-  ): Promise<{ output_text: string }>;
+  ): Promise<{
+    output_text: string;
+    output?: Array<{
+      type?: string;
+      content?: Array<{ type?: string; refusal?: string }>;
+    }>;
+  }>;
 };
+
+type ResponsesResult = Awaited<ReturnType<ResponsesClient["create"]>>;
 
 export type AnalysisErrorCode =
   | "PROVIDER_TIMEOUT"
@@ -76,13 +84,15 @@ function errorDetails(error: unknown): { name?: string; code?: string } {
   };
 }
 
-function providerError(error: unknown): AnalysisError {
+function providerError(error: unknown, signal: AbortSignal): AnalysisError {
   if (error instanceof AnalysisError) return error;
 
   const { name, code } = errorDetails(error);
   if (
+    signal.aborted ||
     name === "AbortError" ||
     name === "TimeoutError" ||
+    name === "APIUserAbortError" ||
     name === "APIConnectionTimeoutError" ||
     code === "ETIMEDOUT"
   ) {
@@ -94,6 +104,12 @@ function providerError(error: unknown): AnalysisError {
   return new AnalysisError("PROVIDER_FAILURE", { cause: error });
 }
 
+function containsRefusal(response: ResponsesResult): boolean {
+  return response.output?.some((item) =>
+    item.content?.some((content) => content.type === "refusal"),
+  ) ?? false;
+}
+
 export async function analyzeDecision({
   client,
   memo,
@@ -102,12 +118,15 @@ export async function analyzeDecision({
   const request = requestFor(memo, model);
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    let response: { output_text: string };
+    const signal = AbortSignal.timeout(18_000);
+    let response: ResponsesResult;
     try {
-      response = await client.create(request, { signal: AbortSignal.timeout(18_000) });
+      response = await client.create(request, { signal });
     } catch (error) {
-      throw providerError(error);
+      throw providerError(error, signal);
     }
+
+    if (containsRefusal(response)) throw new AnalysisError("PROVIDER_REFUSAL");
 
     const trace = parseTrace(response.output_text);
     if (trace) return trace;

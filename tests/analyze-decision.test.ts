@@ -91,6 +91,28 @@ describe("analyzeDecision", () => {
     expect(client.create).toHaveBeenCalledOnce();
   });
 
+  it("maps APIUserAbortError from an expired attempt signal to PROVIDER_TIMEOUT", async () => {
+    const controller = new AbortController();
+    const timeout = vi.spyOn(AbortSignal, "timeout").mockReturnValue(controller.signal);
+    try {
+      const client = fakeClient(async () => {
+        controller.abort();
+        const error = Object.assign(new Error("Request was aborted"), {
+          name: "APIUserAbortError",
+        });
+        throw error;
+      });
+
+      await expect(analyzeDecision({ ...args, client })).rejects.toMatchObject({
+        code: "PROVIDER_TIMEOUT",
+      });
+      expect(client.create).toHaveBeenCalledOnce();
+      expect(client.create.mock.calls[0][1]?.signal?.aborted).toBe(true);
+    } finally {
+      timeout.mockRestore();
+    }
+  });
+
   it("maps a provider refusal without retrying", async () => {
     const refusal = Object.assign(new Error("Request rejected by safety policy"), {
       code: "content_filter",
@@ -102,6 +124,23 @@ describe("analyzeDecision", () => {
     await expect(analyzeDecision({ ...args, client })).rejects.toEqual(
       expect.objectContaining<Partial<AnalysisError>>({ code: "PROVIDER_REFUSAL" }),
     );
+    expect(client.create).toHaveBeenCalledOnce();
+  });
+
+  it("maps refusal output content to PROVIDER_REFUSAL without retrying", async () => {
+    const client = fakeClient(async () => ({
+      output_text: "",
+      output: [
+        {
+          type: "message",
+          content: [{ type: "refusal", refusal: "I cannot help with that request." }],
+        },
+      ],
+    }));
+
+    await expect(analyzeDecision({ ...args, client })).rejects.toMatchObject({
+      code: "PROVIDER_REFUSAL",
+    });
     expect(client.create).toHaveBeenCalledOnce();
   });
 
