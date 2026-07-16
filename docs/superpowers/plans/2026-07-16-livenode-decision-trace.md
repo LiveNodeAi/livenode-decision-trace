@@ -18,6 +18,7 @@
 - Input length must be 80–12,000 Unicode characters after trimming.
 - Request bodies above 50,000 bytes must return HTTP 413 before JSON parsing, using both Content-Length preflight and a streamed byte cap.
 - Non-inference grounded items require non-empty evidence; inference items require null evidence and may not appear as supplied KX Data.
+- Every non-inference evidence value and every link `sourceExcerpt` must occur in the memo after NFKC normalization and whitespace collapse/trim only; case, punctuation, and ellipses remain exact.
 - Explicit core medical, legal, and financial input terms deterministically add a qualified-professional review notice to the UI and both exports.
 - The public API must use a Cloudflare rate-limit binding configured for 10 analysis requests per IP per 60 seconds as approximate abuse protection. Cloudflare rate limiting is intentionally eventually consistent and is not deterministic exact request accounting.
 - The human-facing result must contain Situation, Assumptions, Decision criteria, Options and trade-offs, Recommendation, and Next actions.

@@ -35,7 +35,7 @@ function fakeClient(
   return { create: vi.fn(implementation) };
 }
 
-const args = { memo: "We need to choose a launch plan with low delivery risk.", model: "test-model" };
+const args = { memo: "We need to choose a launch plan; the launch is in June with low delivery risk.", model: "test-model" };
 
 describe("analyzeDecision", () => {
   it("returns a validated Decision Trace and sends a strict, non-stored request", async () => {
@@ -88,6 +88,64 @@ describe("analyzeDecision", () => {
     const client = fakeClient(async () => ({ output_text: responses.shift()! }));
 
     await expect(analyzeDecision({ ...args, client })).resolves.toEqual(trace);
+    expect(client.create).toHaveBeenCalledTimes(2);
+  });
+
+  it("accepts evidence and links found after NFKC and whitespace-only normalization", async () => {
+    const normalizedTrace: DecisionTrace = {
+      ...trace,
+      situation: {
+        ...trace.situation,
+        context: [{ text: "Plan A launches in June.", evidence: "Plan A launches in June", inference: false }],
+      },
+      links: [{ label: "Plan A", relationship: "launch timing", sourceExcerpt: "Plan A" }],
+    };
+    const client = fakeClient(async () => ({ output_text: JSON.stringify(normalizedTrace) }));
+
+    await expect(analyzeDecision({
+      client,
+      model: "test-model",
+      memo: "Plan　Ａ  launches\n in June with low delivery risk.",
+    })).resolves.toEqual(normalizedTrace);
+    expect(client.create).toHaveBeenCalledOnce();
+  });
+
+  it("retries hallucinated evidence and accepts a grounded second response", async () => {
+    const hallucinated = {
+      ...trace,
+      criteria: [{ text: "No risk", evidence: "zero delivery risk", inference: false as const }],
+    };
+    const responses = [JSON.stringify(hallucinated), JSON.stringify(trace)];
+    const client = fakeClient(async () => ({ output_text: responses.shift()! }));
+
+    await expect(analyzeDecision({ ...args, client })).resolves.toEqual(trace);
+    expect(client.create).toHaveBeenCalledTimes(2);
+  });
+
+  it("throws MALFORMED_RESPONSE after repeated hallucinated evidence", async () => {
+    const hallucinated = {
+      ...trace,
+      criteria: [{ text: "No risk", evidence: "zero delivery risk", inference: false as const }],
+    };
+    const client = fakeClient(async () => ({ output_text: JSON.stringify(hallucinated) }));
+
+    await expect(analyzeDecision({ ...args, client })).rejects.toMatchObject({ code: "MALFORMED_RESPONSE" });
+    expect(client.create).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries a hallucinated link excerpt and accepts a grounded link", async () => {
+    const hallucinated = {
+      ...trace,
+      links: [{ label: "Roadmap", relationship: "supports", sourceExcerpt: "secret roadmap" }],
+    };
+    const grounded = {
+      ...trace,
+      links: [{ label: "Launch plan", relationship: "decision theme", sourceExcerpt: "launch plan" }],
+    };
+    const responses = [JSON.stringify(hallucinated), JSON.stringify(grounded)];
+    const client = fakeClient(async () => ({ output_text: responses.shift()! }));
+
+    await expect(analyzeDecision({ ...args, client })).resolves.toEqual(grounded);
     expect(client.create).toHaveBeenCalledTimes(2);
   });
 

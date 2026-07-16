@@ -61,6 +61,7 @@ Browser (Next.js UI)
 - A submitted memo is sent from the browser to the same-origin Worker and then to OpenAI for processing.
 - The application does not persist memo text and does not include memo text in application logs or analytics.
 - Supplied facts require a verbatim evidence excerpt; AI inferences cannot carry or appear as supplied evidence. KX Data includes supplied context only.
+- After schema validation, every supplied evidence excerpt and link source excerpt must occur in the submitted memo after Unicode NFKC normalization and whitespace collapse/trim. Case, punctuation, and ellipses are not fuzzed; a mismatch uses the existing one malformed-response retry.
 - Explicit core medical, legal, or financial terms trigger a deterministic qualified-human-review notice in the UI and both Markdown exports. The notice is computed from the input, not by the model, and the result is not professional advice.
 - Request bodies are capped at 50,000 bytes before JSON parsing, including requests with absent or inaccurate `Content-Length` headers.
 - The OpenAI API key is read only from the server-side Worker environment and is never returned to the browser.
@@ -115,3 +116,5 @@ npm run deploy
 ```
 
 `OPENAI_MODEL` is a non-secret Worker variable configured in `wrangler.jsonc`. The Build Week configuration uses `gpt-5.6-luna` with reasoning effort `none`; the strict schema and server-side validation remain the output boundary. Never commit `.dev.vars`, credentials, submitted memo content, or model responses.
+
+Next.js owns the tracked `next-env.d.ts`. `next dev` (including Playwright) points it at `.next/dev/types`, while `next build` restores the canonical `.next/types` import. Run the production build after Playwright before the final clean-worktree check; do not hand-edit or pin the generated file with a brittle workaround.

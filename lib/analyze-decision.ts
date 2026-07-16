@@ -67,7 +67,33 @@ function requestFor(memo: string, model: string): Record<string, unknown> {
   };
 }
 
-function parseTrace(outputText: string): DecisionTrace | undefined {
+// Grounding deliberately normalizes only Unicode width/compatibility and whitespace.
+// It does not fold case, punctuation, or ellipses, which would weaken excerpt provenance.
+function normalizeGroundingText(value: string): string {
+  return value.normalize("NFKC").replace(/\s+/gu, " ").trim();
+}
+
+function traceIsGrounded(trace: DecisionTrace, memo: string): boolean {
+  const normalizedMemo = normalizeGroundingText(memo);
+  const groundedItems = [
+    ...trace.situation.context,
+    ...trace.assumptions,
+    ...trace.criteria,
+    ...trace.recommendation.reasoning,
+  ];
+  const evidenceMatches = groundedItems.every((item) => {
+    if (item.inference) return true;
+    const evidence = normalizeGroundingText(item.evidence);
+    return evidence.length > 0 && normalizedMemo.includes(evidence);
+  });
+  const linksMatch = trace.links.every((link) => {
+    const excerpt = normalizeGroundingText(link.sourceExcerpt);
+    return excerpt.length > 0 && normalizedMemo.includes(excerpt);
+  });
+  return evidenceMatches && linksMatch;
+}
+
+function parseTrace(outputText: string, memo: string): DecisionTrace | undefined {
   let value: unknown;
   try {
     value = JSON.parse(outputText);
@@ -76,7 +102,7 @@ function parseTrace(outputText: string): DecisionTrace | undefined {
   }
 
   const result = decisionTraceSchema.safeParse(value);
-  return result.success ? result.data : undefined;
+  return result.success && traceIsGrounded(result.data, memo) ? result.data : undefined;
 }
 
 function errorDetails(error: unknown): { name?: string; code?: string } {
@@ -132,7 +158,7 @@ export async function analyzeDecision({
 
     if (containsRefusal(response)) throw new AnalysisError("PROVIDER_REFUSAL");
 
-    const trace = parseTrace(response.output_text);
+    const trace = parseTrace(response.output_text, memo);
     if (trace) return trace;
   }
 

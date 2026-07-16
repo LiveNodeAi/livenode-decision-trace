@@ -8,6 +8,10 @@ Cloudflare Worker version: `713f0889-aad7-47b8-b5fd-eb3c1abfa03c`
 
 No submitted memo text or model output is stored in this document or the screenshots.
 
+## Evidence scope
+
+The live timings and UI evidence below belong to the last deployed Worker `713f0889-aad7-47b8-b5fd-eb3c1abfa03c`, produced by the GPT-5.6 migration/evidence commits through `84e8dbd` and `e7ee5ad`. Current local branch changes beginning with `e496436`, `029d838`, and later commits are **not deployed** and have only local automated evidence. Production redeployment and acceptance remain pending.
+
 ## Deployment
 
 - OpenNext production build: PASS
@@ -63,13 +67,20 @@ Non-sensitive input-state screenshots:
 - Route behavior when the binding denies a request: automated test verifies `429 { "error": "RATE_LIMITED" }` — PASS
 - Production binding behavior is treated as approximate abuse protection, not deterministic exact request accounting. A specific 11th-request 429 is not an acceptance requirement.
 
-## Automated checks
+## Current local automated checks
 
-- `npm test`: PASS, 52/52
+- `npm test`: PASS, 65/65
 - `npm run build`: PASS
 - `npx playwright test`: PASS, 2/2
 - `git diff --check`: PASS
 
 ## Acceptance summary
 
-Current-version acceptance is **PASS**. The five assigned `gpt-5.6-luna` generations all completed below 28 seconds with six sections; both live UI sizes also passed both exports, overflow, and exposure checks.
+The last deployed Worker evidence passed its assigned acceptance set. The current local branch is **not submission-ready** until it is redeployed and accepted in production.
+
+Submission artifacts still pending:
+
+- 3:2 project thumbnail
+- recorded 60–90 second demo video and a public video URL
+- public source repository link
+- production redeployment of the current local HEAD and fresh acceptance evidence
