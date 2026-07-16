@@ -85,3 +85,31 @@ Fresh checks:
 
 Remaining blocker:
 - The product sample did not complete successfully in either measured attempt, and the retry exceeded the approved 28-second timeout. Per the explicit gate, this follow-up remains BLOCKED rather than DONE.
+
+## Bounded-output follow-up (2026-07-16)
+
+Status: PASS
+
+Implementation:
+- Commit `ecb389f` adds matching concise cardinality instructions and strict schema maxima while preserving all six Decision Trace sections and both deterministic Markdown exports.
+- No `max_output_tokens` cap was added; valid structured output is bounded at the schema level instead of risking truncation.
+
+Strict TDD:
+- RED: 12 expected failures proved the prompt had no concise cardinality contract and the schema accepted overflows in context, assumptions, criteria, options, option trade-offs, recommendation reasoning, change conditions, next actions, and links.
+- GREEN: targeted analyzer/schema/Markdown tests passed 25/25; the full suite passed 51/51; the Next.js production build passed.
+
+Deployment:
+- Public URL unchanged: https://livenode-decision-trace.takahiro-nochi.workers.dev
+- Worker version: `690479a4-b919-46b2-b357-fe7468b8f4a0`
+- Existing secret remained protected and was not printed or committed.
+- An initial local OpenNext cleanup hit `ENOTEMPTY` because Finder recreated `.DS_Store`; the ignored generated directory was moved to `/tmp` rather than deleted, and deployment then succeeded.
+
+Exactly five production probes were run. No memo or model output was logged or persisted:
+- Product run 1: HTTP 200, 19,235 ms, six sections.
+- Product run 2: HTTP 200, 21,060 ms, six sections.
+- Product run 3: HTTP 200, 23,574 ms, six sections.
+- Public-policy: HTTP 200, 24,294 ms, six sections.
+- Operations: HTTP 200, 23,808 ms, six sections.
+
+Decision:
+- The bounded-output contract resolves the previously observed product-sample latency tail in the required three-run acceptance check without removing sections, changing the model, or relying on truncation.
