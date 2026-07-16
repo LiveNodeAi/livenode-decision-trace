@@ -19,6 +19,8 @@ export type PublicErrorCode =
   | "REQUEST_TOO_LARGE"
   | "RATE_LIMITED"
   | "ANALYSIS_TIMEOUT"
+  | "ANALYSIS_REFUSED"
+  | "ANALYSIS_COULD_NOT_GROUND"
   | "ANALYSIS_UNAVAILABLE";
 
 function errorResponse(error: PublicErrorCode, status: number): Response {
@@ -117,8 +119,12 @@ export async function POST(request: Request): Promise<Response> {
     });
     return Response.json({ trace, highImpact: isHighImpactMemo(validation.memo) });
   } catch (error) {
-    if (error instanceof AnalysisError && error.code === "PROVIDER_TIMEOUT") {
-      return errorResponse("ANALYSIS_TIMEOUT", 504);
+    if (error instanceof AnalysisError) {
+      if (error.code === "PROVIDER_TIMEOUT") return errorResponse("ANALYSIS_TIMEOUT", 504);
+      if (error.code === "PROVIDER_REFUSAL") return errorResponse("ANALYSIS_REFUSED", 422);
+      if (error.code === "MALFORMED_RESPONSE") {
+        return errorResponse("ANALYSIS_COULD_NOT_GROUND", 422);
+      }
     }
     return errorResponse("ANALYSIS_UNAVAILABLE", 502);
   }

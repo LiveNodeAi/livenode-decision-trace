@@ -154,9 +154,13 @@ describe("POST /api/analyze", () => {
     expect(await body(response)).toEqual({ error: "ANALYSIS_TIMEOUT" });
   });
 
-  it.each(["PROVIDER_FAILURE", "PROVIDER_REFUSAL", "MALFORMED_RESPONSE"] as const)(
-    "maps %s to a public unavailable response",
-    async (code) => {
+  it.each([
+    ["PROVIDER_FAILURE", 502, "ANALYSIS_UNAVAILABLE"],
+    ["PROVIDER_REFUSAL", 422, "ANALYSIS_REFUSED"],
+    ["MALFORMED_RESPONSE", 422, "ANALYSIS_COULD_NOT_GROUND"],
+  ] as const)(
+    "maps %s to a safe differentiated public response",
+    async (code, status, publicCode) => {
       analyzeDecision.mockRejectedValue(new AnalysisError(code, {
         cause: new Error(`provider body containing ${apiKey}`),
       }));
@@ -164,8 +168,8 @@ describe("POST /api/analyze", () => {
       const response = await POST(request({ memo: "a".repeat(80) }));
       const serialized = JSON.stringify(await body(response));
 
-      expect(response.status).toBe(502);
-      expect(serialized).toBe(JSON.stringify({ error: "ANALYSIS_UNAVAILABLE" }));
+      expect(response.status).toBe(status);
+      expect(serialized).toBe(JSON.stringify({ error: publicCode }));
       expect(serialized).not.toContain(apiKey);
       expect(serialized).not.toContain("provider body");
     },

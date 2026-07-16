@@ -134,6 +134,21 @@ describe("DecisionTraceApp", () => {
     expect(screen.getByRole("button", { name: "もう一度試す" })).toBeInTheDocument();
   });
 
+  it.each([
+    ["ANALYSIS_COULD_NOT_GROUND", "根拠を入力内容に結び付けられませんでした", "couldn't ground the analysis in your memo"],
+    ["ANALYSIS_REFUSED", "この内容は分析できませんでした", "This content couldn't be analyzed"],
+  ])("shows safe bilingual guidance for %s", async (error, japanese, english) => {
+    fetchMock.mockResolvedValue(response(422, { error }));
+    render(<DecisionTraceApp />);
+    await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
+    await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(japanese);
+    expect(alert).toHaveTextContent(english);
+    expect(screen.getByRole("textbox", { name: "判断メモ" })).toHaveValue(publicPolicySample.memo);
+  });
+
   it("rejects a malformed successful response and preserves the memo for retry", async () => {
     fetchMock.mockResolvedValue(response(200, { trace: { language: "ja" } }));
     render(<DecisionTraceApp />);
