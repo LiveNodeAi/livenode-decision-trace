@@ -25,6 +25,7 @@ const trace: DecisionTrace = {
 
 describe("Decision Trace output bounds", () => {
   it("requires evidence for supplied facts and forbids evidence on inference", () => {
+    expect(decisionTraceSchema.safeParse(trace).success).toBe(true);
     expect(decisionTraceSchema.safeParse({
       ...trace,
       criteria: [{ text: "Unsupported supplied fact", evidence: null, inference: false }],

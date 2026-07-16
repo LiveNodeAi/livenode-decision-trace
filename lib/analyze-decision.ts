@@ -1,6 +1,8 @@
-import { z } from "zod";
-
-import { decisionTraceSchema, type DecisionTrace } from "./decision-trace-schema";
+import {
+  decisionTraceSchema,
+  providerDecisionTraceSchema,
+  type DecisionTrace,
+} from "./decision-trace-schema";
 
 export type ResponsesClient = {
   create(
@@ -64,7 +66,7 @@ function requestFor(memo: string, model: string): Record<string, unknown> {
         type: "json_schema",
         name: "decision_trace",
         strict: true,
-        schema: z.toJSONSchema(decisionTraceSchema),
+        schema: providerDecisionTraceSchema,
       },
     },
   };

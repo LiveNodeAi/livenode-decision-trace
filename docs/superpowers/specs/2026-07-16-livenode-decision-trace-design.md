@@ -110,6 +110,7 @@ The visual direction uses a restrained cosmic/constellation motif associated wit
 - **Application:** Next.js with TypeScript
 - **Styling:** Tailwind CSS
 - **AI integration:** OpenAI Responses API with schema-constrained structured output
+- **Schema boundary:** provider-compatible structural JSON Schema without grounded-item unions, followed by strict local provenance and memo-grounding validation
 - **Hosting:** Cloudflare Pages and Workers-compatible runtime
 - **Persistence:** none; browser state is cleared on reset or page close
 - **Secrets:** OpenAI credentials remain in server-side environment variables

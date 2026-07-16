@@ -53,6 +53,10 @@ describe("analyzeDecision", () => {
       text: { format: { type: "json_schema", name: "decision_trace", strict: true } },
     });
     expect((request.text as { format: { schema: unknown } }).format.schema).toMatchObject({ type: "object" });
+    const providerSchema = (request.text as { format: { schema: unknown } }).format.schema;
+    const serializedSchema = JSON.stringify(providerSchema);
+    expect(serializedSchema).not.toContain('"anyOf"');
+    expect(serializedSchema).not.toContain('"oneOf"');
     const instructions = String(request.instructions);
     expect(instructions).toMatch(/untrusted/i);
     expect(instructions).toMatch(/verbatim/i);

@@ -49,4 +49,88 @@ export const decisionTraceSchema = z.object({
   ).max(3),
 });
 
+const providerGroundedItemSchema = {
+  type: "object",
+  properties: {
+    text: { type: "string", minLength: 1 },
+    evidence: { type: ["string", "null"], minLength: 1 },
+    inference: { type: "boolean" },
+  },
+  required: ["text", "evidence", "inference"],
+  additionalProperties: false,
+} as const;
+
+const providerOptionSchema = {
+  type: "object",
+  properties: {
+    name: { type: "string", minLength: 1 },
+    benefits: { type: "array", items: { type: "string", minLength: 1 }, minItems: 1, maxItems: 2 },
+    costs: { type: "array", items: { type: "string", minLength: 1 }, minItems: 1, maxItems: 2 },
+    risks: { type: "array", items: { type: "string", minLength: 1 }, maxItems: 2 },
+    reversible: { type: "boolean" },
+  },
+  required: ["name", "benefits", "costs", "risks", "reversible"],
+  additionalProperties: false,
+} as const;
+
+export const providerDecisionTraceSchema = {
+  type: "object",
+  properties: {
+    language: { type: "string", enum: ["ja", "en"] },
+    situation: {
+      type: "object",
+      properties: {
+        decision: { type: "string", minLength: 1 },
+        context: { type: "array", items: providerGroundedItemSchema, minItems: 1, maxItems: 3 },
+      },
+      required: ["decision", "context"],
+      additionalProperties: false,
+    },
+    assumptions: { type: "array", items: providerGroundedItemSchema, minItems: 1, maxItems: 3 },
+    criteria: { type: "array", items: providerGroundedItemSchema, minItems: 1, maxItems: 4 },
+    options: { type: "array", items: providerOptionSchema, minItems: 2, maxItems: 3 },
+    recommendation: {
+      type: "object",
+      properties: {
+        option: { type: "string", minLength: 1 },
+        reasoning: { type: "array", items: providerGroundedItemSchema, minItems: 1, maxItems: 3 },
+        confidence: { type: "string", enum: ["low", "medium", "high"] },
+        changeConditions: { type: "array", items: { type: "string", minLength: 1 }, maxItems: 2 },
+      },
+      required: ["option", "reasoning", "confidence", "changeConditions"],
+      additionalProperties: false,
+    },
+    nextActions: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          order: { type: "integer", minimum: 1 },
+          action: { type: "string", minLength: 1 },
+        },
+        required: ["order", "action"],
+        additionalProperties: false,
+      },
+      minItems: 1,
+      maxItems: 4,
+    },
+    links: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          label: { type: "string", minLength: 1 },
+          relationship: { type: "string", minLength: 1 },
+          sourceExcerpt: { type: "string", minLength: 1 },
+        },
+        required: ["label", "relationship", "sourceExcerpt"],
+        additionalProperties: false,
+      },
+      maxItems: 3,
+    },
+  },
+  required: ["language", "situation", "assumptions", "criteria", "options", "recommendation", "nextActions", "links"],
+  additionalProperties: false,
+} as const;
+
 export type DecisionTrace = z.infer<typeof decisionTraceSchema>;
