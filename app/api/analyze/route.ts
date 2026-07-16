@@ -21,6 +21,8 @@ export type PublicErrorCode =
   | "ANALYSIS_TIMEOUT"
   | "ANALYSIS_REFUSED"
   | "ANALYSIS_COULD_NOT_GROUND"
+  | "ANALYSIS_BUSY"
+  | "ANALYSIS_REQUEST_REJECTED"
   | "ANALYSIS_UNAVAILABLE";
 
 function errorResponse(error: PublicErrorCode, status: number): Response {
@@ -122,6 +124,10 @@ export async function POST(request: Request): Promise<Response> {
     if (error instanceof AnalysisError) {
       if (error.code === "PROVIDER_TIMEOUT") return errorResponse("ANALYSIS_TIMEOUT", 504);
       if (error.code === "PROVIDER_REFUSAL") return errorResponse("ANALYSIS_REFUSED", 422);
+      if (error.code === "PROVIDER_RATE_LIMIT") return errorResponse("ANALYSIS_BUSY", 503);
+      if (error.code === "PROVIDER_BAD_REQUEST") {
+        return errorResponse("ANALYSIS_REQUEST_REJECTED", 422);
+      }
       if (error.code === "MALFORMED_RESPONSE") {
         return errorResponse("ANALYSIS_COULD_NOT_GROUND", 422);
       }

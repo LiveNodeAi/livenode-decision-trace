@@ -20,6 +20,9 @@ type ResponsesResult = Awaited<ReturnType<ResponsesClient["create"]>>;
 export type AnalysisErrorCode =
   | "PROVIDER_TIMEOUT"
   | "PROVIDER_REFUSAL"
+  | "PROVIDER_RATE_LIMIT"
+  | "PROVIDER_BAD_REQUEST"
+  | "PROVIDER_AUTH"
   | "MALFORMED_RESPONSE"
   | "PROVIDER_FAILURE";
 
@@ -109,19 +112,20 @@ function parseTrace(outputText: string, memo: string): DecisionTrace | undefined
   return result.success && traceIsGrounded(result.data, memo) ? result.data : undefined;
 }
 
-function errorDetails(error: unknown): { name?: string; code?: string } {
+function errorDetails(error: unknown): { name?: string; code?: string; status?: number } {
   if (typeof error !== "object" || error === null) return {};
-  const candidate = error as { name?: unknown; code?: unknown };
+  const candidate = error as { name?: unknown; code?: unknown; status?: unknown };
   return {
     name: typeof candidate.name === "string" ? candidate.name : undefined,
     code: typeof candidate.code === "string" ? candidate.code : undefined,
+    status: typeof candidate.status === "number" ? candidate.status : undefined,
   };
 }
 
 function providerError(error: unknown, signal: AbortSignal): AnalysisError {
   if (error instanceof AnalysisError) return error;
 
-  const { name, code } = errorDetails(error);
+  const { name, code, status } = errorDetails(error);
   if (
     signal.aborted ||
     name === "AbortError" ||
@@ -134,6 +138,15 @@ function providerError(error: unknown, signal: AbortSignal): AnalysisError {
   }
   if (code === "content_filter" || code === "refusal" || name === "ContentFilterFinishReasonError") {
     return new AnalysisError("PROVIDER_REFUSAL", { cause: error });
+  }
+  if (status === 429 || code === "rate_limit_exceeded") {
+    return new AnalysisError("PROVIDER_RATE_LIMIT", { cause: error });
+  }
+  if (status === 400 || status === 422 || code === "invalid_request_error") {
+    return new AnalysisError("PROVIDER_BAD_REQUEST", { cause: error });
+  }
+  if (status === 401 || status === 403) {
+    return new AnalysisError("PROVIDER_AUTH", { cause: error });
   }
   return new AnalysisError("PROVIDER_FAILURE", { cause: error });
 }

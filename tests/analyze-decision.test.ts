@@ -233,6 +233,28 @@ describe("analyzeDecision", () => {
     expect(client.create).toHaveBeenCalledOnce();
   });
 
+  it.each([
+    [{ status: 429 }, "PROVIDER_RATE_LIMIT"],
+    [{ code: "rate_limit_exceeded" }, "PROVIDER_RATE_LIMIT"],
+    [{ status: 400 }, "PROVIDER_BAD_REQUEST"],
+    [{ status: 422 }, "PROVIDER_BAD_REQUEST"],
+    [{ code: "invalid_request_error" }, "PROVIDER_BAD_REQUEST"],
+    [{ status: 401 }, "PROVIDER_AUTH"],
+    [{ status: 403 }, "PROVIDER_AUTH"],
+  ] as const)("classifies safe provider metadata %o as %s", async (metadata, expected) => {
+    const providerFailure = Object.assign(new Error(), metadata);
+    Object.defineProperties(providerFailure, {
+      message: { get: () => { throw new Error("message must not be read"); } },
+      body: { get: () => { throw new Error("body must not be read"); } },
+    });
+    const client = fakeClient(async () => {
+      throw providerFailure;
+    });
+
+    await expect(analyzeDecision({ ...args, client })).rejects.toMatchObject({ code: expected });
+    expect(client.create).toHaveBeenCalledOnce();
+  });
+
   it("maps refusal output content to PROVIDER_REFUSAL without retrying", async () => {
     const client = fakeClient(async () => ({
       output_text: "",

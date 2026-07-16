@@ -137,8 +137,10 @@ describe("DecisionTraceApp", () => {
   it.each([
     ["ANALYSIS_COULD_NOT_GROUND", "根拠を入力内容に結び付けられませんでした", "couldn't ground the analysis in your memo"],
     ["ANALYSIS_REFUSED", "この内容は分析できませんでした", "This content couldn't be analyzed"],
+    ["ANALYSIS_BUSY", "分析が混み合っています", "Analysis is busy"],
+    ["ANALYSIS_REQUEST_REJECTED", "分析リクエストを受け付けられませんでした", "The analysis request was rejected"],
   ])("shows safe bilingual guidance for %s", async (error, japanese, english) => {
-    fetchMock.mockResolvedValue(response(422, { error }));
+    fetchMock.mockResolvedValue(response(error === "ANALYSIS_BUSY" ? 503 : 422, { error }));
     render(<DecisionTraceApp />);
     await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
     await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));

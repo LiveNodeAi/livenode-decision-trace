@@ -21,6 +21,8 @@ const errors: Record<string, string> = {
   ANALYSIS_TIMEOUT: "分析に時間がかかりすぎました。入力内容は残っています。もう一度試してください。",
   ANALYSIS_COULD_NOT_GROUND: "根拠を入力内容に結び付けられませんでした。入力内容を確認して、もう一度試してください。 / We couldn't ground the analysis in your memo. Review it and try again.",
   ANALYSIS_REFUSED: "この内容は分析できませんでした。入力内容を見直してください。 / This content couldn't be analyzed. Please revise your memo.",
+  ANALYSIS_BUSY: "分析が混み合っています。少し待ってから、もう一度試してください。 / Analysis is busy. Wait a moment and try again.",
+  ANALYSIS_REQUEST_REJECTED: "分析リクエストを受け付けられませんでした。入力内容を見直してください。 / The analysis request was rejected. Please review your memo.",
   ANALYSIS_UNAVAILABLE: "現在、分析を完了できませんでした。入力内容は残っています。もう一度試してください。",
   INVALID_REQUEST: "入力内容を確認して、もう一度試してください。",
   MALFORMED_RESPONSE: "分析結果を確認できませんでした。入力内容は残っています。もう一度試してください。",
