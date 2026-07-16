@@ -114,70 +114,53 @@ describe("analyzeDecision", () => {
     expect(client.create).toHaveBeenCalledOnce();
   });
 
-  it("retries hallucinated evidence and accepts a grounded second response", async () => {
-    const hallucinated = {
+  it("sanitizes mixed valid and invalid provenance without retrying", async () => {
+    const mixed = {
       ...trace,
-      criteria: [{ text: "No risk", evidence: "zero delivery risk", inference: false as const }],
+      assumptions: [{ text: "Claimed inference", evidence: "launch is in June", inference: true as const }],
+      criteria: [
+        trace.criteria[0],
+        { text: "No risk", evidence: "zero delivery risk", inference: false as const },
+        { text: "Missing evidence", evidence: null, inference: false as const },
+      ],
     };
-    const responses = [JSON.stringify(hallucinated), JSON.stringify(trace)];
-    const client = fakeClient(async () => ({ output_text: responses.shift()! }));
+    const client = fakeClient(async () => ({ output_text: JSON.stringify(mixed) }));
 
-    await expect(analyzeDecision({ ...args, client })).resolves.toEqual(trace);
-    expect(client.create).toHaveBeenCalledTimes(2);
+    const result = await analyzeDecision({ ...args, client });
+    expect(result.criteria[0]).toEqual(trace.criteria[0]);
+    expect(result.criteria[1]).toEqual({ text: "No risk", evidence: null, inference: true });
+    expect(result.criteria[2]).toEqual({ text: "Missing evidence", evidence: null, inference: true });
+    expect(result.assumptions[0]).toEqual({ text: "Claimed inference", evidence: null, inference: true });
+    expect(client.create).toHaveBeenCalledOnce();
   });
 
-  it("throws MALFORMED_RESPONSE after repeated hallucinated evidence", async () => {
-    const hallucinated = {
+  it("drops invalid links and preserves valid links without retrying", async () => {
+    const withLinks = {
       ...trace,
-      criteria: [{ text: "No risk", evidence: "zero delivery risk", inference: false as const }],
+      links: [
+        { label: "launch plan", relationship: "decision theme", sourceExcerpt: "launch plan" },
+        { label: "Roadmap", relationship: "supports", sourceExcerpt: "secret roadmap" },
+        { label: "Secret roadmap", relationship: "supports", sourceExcerpt: "launch plan" },
+      ],
     };
-    const client = fakeClient(async () => ({ output_text: JSON.stringify(hallucinated) }));
+    const client = fakeClient(async () => ({ output_text: JSON.stringify(withLinks) }));
 
-    await expect(analyzeDecision({ ...args, client })).rejects.toMatchObject({ code: "MALFORMED_RESPONSE" });
-    expect(client.create).toHaveBeenCalledTimes(2);
-  });
-
-  it("retries a hallucinated link excerpt and accepts a grounded link", async () => {
-    const hallucinated = {
-      ...trace,
-      links: [{ label: "Roadmap", relationship: "supports", sourceExcerpt: "secret roadmap" }],
-    };
-    const grounded = {
-      ...trace,
+    await expect(analyzeDecision({ ...args, client })).resolves.toMatchObject({
       links: [{ label: "launch plan", relationship: "decision theme", sourceExcerpt: "launch plan" }],
-    };
-    const responses = [JSON.stringify(hallucinated), JSON.stringify(grounded)];
-    const client = fakeClient(async () => ({ output_text: responses.shift()! }));
-
-    await expect(analyzeDecision({ ...args, client })).resolves.toEqual(grounded);
-    expect(client.create).toHaveBeenCalledTimes(2);
+    });
+    expect(client.create).toHaveBeenCalledOnce();
   });
 
-  it("retries an invented link label even when its source excerpt is grounded", async () => {
-    const inventedLabel = {
-      ...trace,
-      links: [{ label: "Secret roadmap", relationship: "supports", sourceExcerpt: "launch plan" }],
-    };
-    const grounded = {
-      ...trace,
-      links: [{ label: "launch plan", relationship: "decision theme", sourceExcerpt: "launch plan" }],
-    };
-    const responses = [JSON.stringify(inventedLabel), JSON.stringify(grounded)];
-    const client = fakeClient(async () => ({ output_text: responses.shift()! }));
+  it("removes all links when none are grounded in the memo", async () => {
+    const client = fakeClient(async () => ({
+      output_text: JSON.stringify({
+        ...trace,
+        links: [{ label: "Roadmap", relationship: "supports", sourceExcerpt: "secret roadmap" }],
+      }),
+    }));
 
-    await expect(analyzeDecision({ ...args, client })).resolves.toEqual(grounded);
-    expect(client.create).toHaveBeenCalledTimes(2);
-  });
-
-  it("throws MALFORMED_RESPONSE after repeated invented link labels", async () => {
-    const inventedLabel = {
-      ...trace,
-      links: [{ label: "Secret roadmap", relationship: "supports", sourceExcerpt: "launch plan" }],
-    };
-    const client = fakeClient(async () => ({ output_text: JSON.stringify(inventedLabel) }));
-
-    await expect(analyzeDecision({ ...args, client })).rejects.toMatchObject({ code: "MALFORMED_RESPONSE" });
-    expect(client.create).toHaveBeenCalledTimes(2);
+    await expect(analyzeDecision({ ...args, client })).resolves.toMatchObject({ links: [] });
+    expect(client.create).toHaveBeenCalledOnce();
   });
 
   it("throws MALFORMED_RESPONSE after two malformed responses", async () => {

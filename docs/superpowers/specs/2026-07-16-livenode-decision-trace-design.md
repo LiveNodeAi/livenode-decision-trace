@@ -111,6 +111,7 @@ The visual direction uses a restrained cosmic/constellation motif associated wit
 - **Styling:** Tailwind CSS
 - **AI integration:** OpenAI Responses API with schema-constrained structured output
 - **Schema boundary:** provider-compatible structural JSON Schema without grounded-item unions, followed by strict local provenance and memo-grounding validation
+- **Grounding repair:** mismatched evidence is downgraded to explicit inference and ungrounded links are dropped before canonical validation; model-authored claim and option text is otherwise unchanged
 - **Hosting:** Cloudflare Pages and Workers-compatible runtime
 - **Persistence:** none; browser state is cleared on reset or page close
 - **Secrets:** OpenAI credentials remain in server-side environment variables

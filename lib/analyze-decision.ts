@@ -1,6 +1,7 @@
 import {
   decisionTraceSchema,
   providerDecisionTraceSchema,
+  providerDecisionTraceStructuralSchema,
   type DecisionTrace,
 } from "./decision-trace-schema";
 
@@ -78,20 +79,16 @@ function normalizeGroundingText(value: string): string {
   return value.normalize("NFKC").replace(/\s+/gu, " ").trim();
 }
 
-function traceIsGrounded(trace: DecisionTrace, memo: string): boolean {
+type ProviderTrace = ReturnType<typeof providerDecisionTraceStructuralSchema.parse>;
+
+function sanitizeTrace(trace: ProviderTrace, memo: string): unknown {
   const normalizedMemo = normalizeGroundingText(memo);
-  const groundedItems = [
-    ...trace.situation.context,
-    ...trace.assumptions,
-    ...trace.criteria,
-    ...trace.recommendation.reasoning,
-  ];
-  const evidenceMatches = groundedItems.every((item) => {
-    if (item.inference) return true;
-    const evidence = normalizeGroundingText(item.evidence);
-    return evidence.length > 0 && normalizedMemo.includes(evidence);
-  });
-  const linksMatch = trace.links.every((link) => {
+  const sanitizeItem = (item: ProviderTrace["criteria"][number]) => {
+    const evidence = item.evidence === null ? "" : normalizeGroundingText(item.evidence);
+    if (!item.inference && evidence.length > 0 && normalizedMemo.includes(evidence)) return item;
+    return { ...item, inference: true as const, evidence: null };
+  };
+  const links = trace.links.filter((link) => {
     const label = normalizeGroundingText(link.label);
     const excerpt = normalizeGroundingText(link.sourceExcerpt);
     return label.length > 0
@@ -99,7 +96,20 @@ function traceIsGrounded(trace: DecisionTrace, memo: string): boolean {
       && normalizedMemo.includes(label)
       && normalizedMemo.includes(excerpt);
   });
-  return evidenceMatches && linksMatch;
+  return {
+    ...trace,
+    situation: {
+      ...trace.situation,
+      context: trace.situation.context.map(sanitizeItem),
+    },
+    assumptions: trace.assumptions.map(sanitizeItem),
+    criteria: trace.criteria.map(sanitizeItem),
+    recommendation: {
+      ...trace.recommendation,
+      reasoning: trace.recommendation.reasoning.map(sanitizeItem),
+    },
+    links,
+  };
 }
 
 function parseTrace(outputText: string, memo: string): DecisionTrace | undefined {
@@ -110,8 +120,10 @@ function parseTrace(outputText: string, memo: string): DecisionTrace | undefined
     return undefined;
   }
 
-  const result = decisionTraceSchema.safeParse(value);
-  return result.success && traceIsGrounded(result.data, memo) ? result.data : undefined;
+  const structural = providerDecisionTraceStructuralSchema.safeParse(value);
+  if (!structural.success) return undefined;
+  const result = decisionTraceSchema.safeParse(sanitizeTrace(structural.data, memo));
+  return result.success ? result.data : undefined;
 }
 
 function errorDetails(error: unknown): { name?: string; code?: string; status?: number } {
