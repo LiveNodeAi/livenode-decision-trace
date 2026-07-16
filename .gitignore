@@ -4,6 +4,7 @@ node_modules/
 .next/
 .open-next/
 .wrangler/
+.superpowers/brainstorm/
 .env*
 !.env.example
 .dev.vars
