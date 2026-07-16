@@ -4,7 +4,7 @@ Verified on 2026-07-16 (Asia/Tokyo).
 
 Public URL: <https://livenode-decision-trace.takahiro-nochi.workers.dev>
 
-Cloudflare Worker version: `690479a4-b919-46b2-b357-fe7468b8f4a0`
+Cloudflare Worker version: `713f0889-aad7-47b8-b5fd-eb3c1abfa03c`
 
 No submitted memo text or model output is stored in this document or the screenshots.
 
@@ -13,8 +13,8 @@ No submitted memo text or model output is stored in this document or the screens
 - OpenNext production build: PASS
 - Worker upload and `workers.dev` route: PASS
 - Server-side `OPENAI_API_KEY` secret: retained in the Worker secret store; never printed or committed
-- Non-secret `OPENAI_MODEL`: `gpt-5`
-- Model request: `reasoning: { effort: "minimal" }`
+- Non-secret `OPENAI_MODEL`: `gpt-5.6-luna`
+- Model request: `reasoning: { effort: "none" }`
 - Per-attempt abort signal: fresh 28-second timeout
 
 ## TDD evidence
@@ -23,26 +23,19 @@ The regression test was written before the implementation change. RED showed two
 
 For the final latency fix, RED showed 12 expected failures: the request lacked a concise cardinality contract and the schema accepted every tested array overflow. GREEN bounds the trace to 3 context items, 3 assumptions, 4 criteria, 3 options, 2 benefits/costs/risks per option, 3 recommendation reasons, 2 change conditions, 4 next actions, and 3 links. The same limits are stated in the model instructions. Targeted tests passed 25/25 and the full suite passed 51/51.
 
+For the current-model migration, RED showed two expected failures: the request still used reasoning effort `minimal`, and Worker/local defaults still used `gpt-5`. GREEN changes the request to effort `none` and the defaults to `gpt-5.6-luna`, while retaining the 28-second timeout and bounded schema. Targeted tests passed 10/10; the full suite passed 52/52 and the production build passed.
+
 ## Production AI flow
 
 | Input | HTTP | Duration | Six sections | Language |
 | --- | ---: | ---: | ---: | --- |
-| Product sample, run 1 | 200 | 19,235 ms | Yes | Japanese |
-| Product sample, run 2 | 200 | 21,060 ms | Yes | Japanese |
-| Product sample, run 3 | 200 | 23,574 ms | Yes | Japanese |
-| Public-policy sample | 200 | 24,294 ms | Yes | Japanese |
-| Operations sample | 200 | 23,808 ms | Yes | Japanese |
+| Product sample | 200 | 9,476 ms | Yes | Japanese |
+| Japanese free-form | 200 | 6,840 ms | Yes | Japanese |
+| English free-form | 200 | 4,813 ms | Yes | English |
+| Desktop 1440 UI | 200 | 7,817 ms | Yes | Japanese |
+| Mobile 375 UI | 200 | 8,180 ms | Yes | Japanese |
 
-Status: **PASS**. The product sample succeeded three consecutive times and both comparison samples succeeded once. All five bounded probes returned complete six-section traces below the 28-second application limit. No additional live requests were made in this verification round.
-
-### Current-version free-form checks
-
-These checks also ran against Worker `690479a4-b919-46b2-b357-fe7468b8f4a0`; no older deployment timings are reused.
-
-| Input | HTTP | Duration | Six sections | Response exposure |
-| --- | ---: | ---: | --- | --- |
-| Japanese free-form | 200 | 16,162 ms | Yes | None observed |
-| English free-form | 200 | 16,147 ms | Yes | None observed |
+Status: **PASS**. Exactly five generations were run against Worker `713f0889-aad7-47b8-b5fd-eb3c1abfa03c`; all returned HTTP 200 with six sections below 28 seconds. No older deployment timings are reused and no retries or fallback model probes were made.
 
 ## Privacy and response exposure
 
@@ -54,10 +47,10 @@ These checks also ran against Worker `690479a4-b919-46b2-b357-fe7468b8f4a0`; no 
 
 | Viewport | HTTP | Duration | Six cards | Overflow | Decision Trace headings | KX Note headings |
 | --- | ---: | ---: | ---: | --- | --- | --- |
-| 1440 × 1000 | Response received; status not captured | Not captured | No result within 45s | Not verifiable | Not verifiable | Not verifiable |
-| 375 × 812 | 504 | 28,447 ms | No | Not verifiable | Not verifiable | Not verifiable |
+| 1440 × 1000 | 200 | 7,817 ms | 6 | No | PASS | PASS |
+| 375 × 812 | 200 | 8,180 ms | 6 | No | PASS | PASS |
 
-The first desktop harness attempt emitted no API request because it clicked before React hydration. A local intercepted-response check then proved the corrected harness (`networkidle` plus textarea population) observes exactly one request and validates six cards, both distinct non-empty Markdown exports and their headings, overflow, and response exposure. The one authorized live desktop generation received an API response but did not render result cards within the 45-second UI window; the harness exited before recording its status and duration. It was not retried. The one authorized mobile generation returned the public 504 response at 28,447 ms. It was not retried. Neither live UI attempt produced exports or a result layout to inspect.
+Both current-version UI checks observed exactly one API request, rendered six cards, produced distinct non-empty Decision Trace and KX Note exports with every required heading, stayed within the viewport with no horizontal overflow, and exposed no submitted memo, provider detail, stack, or key-shaped field in the response.
 
 Non-sensitive input-state screenshots:
 
@@ -72,11 +65,11 @@ Non-sensitive input-state screenshots:
 
 ## Automated checks
 
-- `npm test`: PASS, 51/51
+- `npm test`: PASS, 52/52
 - `npm run build`: PASS
 - `npx playwright test`: PASS, 2/2
 - `git diff --check`: PASS
 
 ## Acceptance summary
 
-The deployed app passes the three sample API checks and both current-version free-form checks. Current-version live result/copy acceptance remains **BLOCKED**: the single desktop attempt produced no result within 45 seconds, and the single mobile attempt returned 504 at 28,447 ms. No retry or extra live generation was used.
+Current-version acceptance is **PASS**. The five assigned `gpt-5.6-luna` generations all completed below 28 seconds with six sections; both live UI sizes also passed both exports, overflow, and exposure checks.

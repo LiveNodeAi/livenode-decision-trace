@@ -127,3 +127,29 @@ Version-scoped results only; older deployment timings were not reused:
 - Mobile 375: the one authorized live generation returned HTTP 504 at 28,447 ms. It produced no result or exports; response exposure check passed. No retry.
 
 The corrected local UI harness verifies six sections, distinct non-empty Decision Trace and KX Note exports with all required headings, horizontal bounds, and response-shape exposure when supplied a valid response. Those assertions could not pass against the two authorized live attempts because neither produced a live result state.
+
+## GPT-5.6 Luna migration (2026-07-16)
+
+Worker version: `713f0889-aad7-47b8-b5fd-eb3c1abfa03c`
+
+Status: PASS
+
+Implementation:
+- Commit `afc227a` changes Worker/local defaults from `gpt-5` to `gpt-5.6-luna` and requests reasoning effort `none`.
+- The 28-second timeout, strict bounded schema, privacy boundary, and both exports are unchanged.
+- No performance claim was made before production measurement.
+
+Strict TDD:
+- RED: analyzer test rejected the old `minimal` effort and runtime-config test rejected the old model defaults.
+- GREEN: targeted tests passed 10/10; full tests passed 52/52; production build passed.
+
+Deployment:
+- Existing Worker secret was retained and never printed or committed.
+- Deployment binding output confirmed `OPENAI_MODEL ("gpt-5.6-luna")`.
+
+Exactly five current-version generations were run, with no retry or fallback probe:
+- Product API: HTTP 200, 9,476 ms, six sections, exposure-safe.
+- Japanese free-form API: HTTP 200, 6,840 ms, six sections, exposure-safe.
+- English free-form API: HTTP 200, 4,813 ms, six sections, exposure-safe.
+- Desktop 1440 UI: HTTP 200, 7,817 ms, one API request, six sections, both distinct non-empty exports and headings pass, no overflow, exposure-safe.
+- Mobile 375 UI: HTTP 200, 8,180 ms, one API request, six sections, both distinct non-empty exports and headings pass, no overflow, exposure-safe.
