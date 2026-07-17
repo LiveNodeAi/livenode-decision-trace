@@ -106,7 +106,7 @@ test("5テーマを最大2並列で処理し、部分失敗だけ再試行して
   await page.getByRole("button", { name: "選択した4件を生成" }).click();
 
   await expect(page.getByRole("heading", { name: "複数テーマのDecision Trace" })).toBeVisible();
-  await expect(page.getByRole("listitem", { name: /4確認・保存/ })).toHaveAttribute("aria-current", "step");
+  await expect(page.getByRole("listitem", { name: /4ZIP保存/ })).toHaveAttribute("aria-current", "step");
   await expect(page.getByText("3/4件完了")).toBeVisible();
   expect(maximum).toBe(2);
   expect(attempts.get("topic-5")).toBeUndefined();

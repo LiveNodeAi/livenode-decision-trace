@@ -73,7 +73,7 @@ describe("DecisionTraceApp", () => {
     const steps = within(screen.getByRole("list", { name: "会議ログからMarkdownまでの流れ" })).getAllByRole("listitem");
     expect(steps).toHaveLength(4);
     expect(steps.map((step) => step.textContent)).toEqual([
-      "1貼り付け現在", "2テーマ確認", "3Trace生成", "4確認・保存",
+      "1貼り付け現在", "2テーマ確認", "3Trace生成", "4ZIP保存",
     ]);
     expect(steps[0]).toHaveAttribute("aria-current", "step");
 
@@ -161,7 +161,7 @@ describe("DecisionTraceApp", () => {
     await userEvent.click(screen.getByRole("button", { name: "編集した議題Bを中止" }));
 
     expect(await screen.findByText("編集した議題Bの生成に失敗しました")).toBeInTheDocument();
-    expect(screen.getByRole("listitem", { name: /4確認・保存/ })).toHaveAttribute("aria-current", "step");
+    expect(screen.getByRole("listitem", { name: /4ZIP保存/ })).toHaveAttribute("aria-current", "step");
     expect(screen.getByRole("listitem", { name: /3Trace生成完了/ })).toHaveClass("flow-step-complete");
     expect(await screen.findAllByTestId("multi-trace-success")).toHaveLength(2);
     expect(screen.getAllByText("議題A").length).toBeGreaterThan(0);

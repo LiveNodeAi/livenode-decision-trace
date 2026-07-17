@@ -56,3 +56,8 @@
 - 完了工程の50% cyan枠を`color-mix(in srgb, var(--cyan) 50%, transparent)`へ変更
 - 完了番号の文字色を直値から既存`var(--space)`へ変更
 - 新規ステッパーCSSは既存カラー変数だけで構成
+
+## Public Review Follow-up
+
+- 仕様正本に合わせ、Step 4の表示・accessible nameを`確認・保存`から`ZIP保存`へ修正
+- unit/E2Eを先に`ZIP保存`期待へ変更し、旧ラベルによるREDを確認してから実装

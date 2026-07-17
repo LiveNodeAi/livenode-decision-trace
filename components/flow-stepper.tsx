@@ -4,7 +4,7 @@ const steps = [
   { number: 1, label: "貼り付け" },
   { number: 2, label: "テーマ確認" },
   { number: 3, label: "Trace生成" },
-  { number: 4, label: "確認・保存" },
+  { number: 4, label: "ZIP保存" },
 ] as const;
 
 export function FlowStepper({ current }: { current: FlowStep }): React.ReactElement {
