@@ -67,9 +67,9 @@ function buildBoundedTopicMemo(
     const contextStart = Math.max(0, range.start - CONTEXT_CHARACTERS);
     const contextEnd = Math.min(transcript.length, range.end + CONTEXT_CHARACTERS);
     return `<source index="${index + 1}" start="${range.start}" end="${range.end}">\n`
-      + `<before>${transcript.slice(contextStart, range.start)}</before>\n`
-      + `<verified_excerpt>${range.excerpt}</verified_excerpt>\n`
-      + `<after>${transcript.slice(range.end, contextEnd)}</after>\n`
+      + `<before>${escapeXmlData(transcript.slice(contextStart, range.start))}</before>\n`
+      + `<verified_excerpt>${escapeXmlData(range.excerpt)}</verified_excerpt>\n`
+      + `<after>${escapeXmlData(transcript.slice(range.end, contextEnd))}</after>\n`
       + `</source>`;
   }).join("\n");
 
@@ -126,7 +126,13 @@ export async function analyzeTopic(args: AnalyzeTopicArgs): Promise<TopicTraceRe
     args.topic.editedTitle,
     args.topic.ranges,
   );
-  const trace = await analyzeDecision({ client: args.client, memo, model: args.model });
+  const groundingMemo = args.topic.ranges.map(({ excerpt }) => excerpt).join("\n\n");
+  const trace = await analyzeDecision({
+    client: args.client,
+    memo,
+    groundingMemo,
+    model: args.model,
+  });
   if (!hasGroundedEvidence(trace)) throw new TopicAnalysisError("TOPIC_NOT_GROUNDED");
 
   return {

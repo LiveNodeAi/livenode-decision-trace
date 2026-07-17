@@ -54,6 +54,7 @@ export type AnalyzeDecisionArgs = {
   client: ResponsesClient;
   memo: string;
   model: string;
+  groundingMemo?: string;
 };
 
 function requestFor(memo: string, model: string): Record<string, unknown> {
@@ -177,6 +178,7 @@ export async function analyzeDecision({
   client,
   memo,
   model,
+  groundingMemo = memo,
 }: AnalyzeDecisionArgs): Promise<DecisionTrace> {
   const request = requestFor(memo, model);
 
@@ -191,7 +193,7 @@ export async function analyzeDecision({
 
     if (containsRefusal(response)) throw new AnalysisError("PROVIDER_REFUSAL");
 
-    const trace = parseTrace(response.output_text, memo);
+    const trace = parseTrace(response.output_text, groundingMemo);
     if (trace) return trace;
   }
 
