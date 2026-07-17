@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 type TranscriptInputPanelProps = {
   transcript: string;
   detecting: boolean;
@@ -7,12 +9,16 @@ type TranscriptInputPanelProps = {
 };
 
 export function TranscriptInputPanel({ transcript, detecting, error, onChange, onDetect }: TranscriptInputPanelProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => { textareaRef.current?.focus(); }, []);
+
   return (
     <section className="input-panel" aria-labelledby="transcript-title">
       <h2 id="transcript-title">文字起こしからテーマを見つける</h2>
       <p>最大5件の判断テーマを検出し、確認してから個別のDecision Traceを生成します。</p>
       <label className="field-label" htmlFor="meeting-transcript">文字起こし</label>
       <textarea
+        ref={textareaRef}
         id="meeting-transcript"
         name="transcript"
         autoComplete="off"
