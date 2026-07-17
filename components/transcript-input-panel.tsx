@@ -14,8 +14,8 @@ export function TranscriptInputPanel({ transcript, detecting, error, onChange, o
 
   return (
     <section className="input-panel" aria-labelledby="transcript-title">
-      <h2 id="transcript-title">文字起こしからテーマを見つける</h2>
-      <p>最大5件の判断テーマを検出し、確認してから個別のDecision Traceを生成します。</p>
+      <h2 id="transcript-title">会議・文字起こしからテーマを見つける</h2>
+      <p>議事録や会話ログを貼り付け、最大5つの判断テーマに分けます。確認後、テーマごとのDecision Traceを生成できます。</p>
       <label className="field-label" htmlFor="meeting-transcript">文字起こし</label>
       <textarea
         ref={textareaRef}

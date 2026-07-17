@@ -30,6 +30,7 @@ test("sampleから生成し、6要素をコピーしてリセットできる", a
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ trace, highImpact: false }) });
   });
   await page.goto("/");
+  await page.getByRole("button", { name: "アイデアメモ" }).click();
 
   const sample = page.getByRole("button", { name: "町の自転車施策で実証地域を絞る" });
   await expect(sample).toBeVisible();

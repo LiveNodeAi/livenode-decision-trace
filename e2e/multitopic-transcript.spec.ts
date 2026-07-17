@@ -38,9 +38,9 @@ function topicResult(topic: (typeof topics)[number], attemptId: string) {
 
 async function enterTranscriptMode(page: Page) {
   await page.goto("/");
-  const mode = page.getByRole("button", { name: "文字起こしモード" });
-  await mode.focus();
-  await page.keyboard.press("Enter");
+  const modes = page.getByRole("navigation", { name: "入力モード" }).getByRole("button");
+  await expect(modes).toHaveText(["会議・文字起こし", "アイデアメモ"]);
+  await expect(modes.first()).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("textbox", { name: "文字起こし" })).toBeFocused();
 }
 
@@ -164,6 +164,8 @@ test("単一モードを維持し、keyboard操作とviewport内配置を満た�
     body: JSON.stringify({ trace, highImpact: false }),
   }));
   await page.goto("/");
+  await page.getByRole("button", { name: "アイデアメモ" }).focus();
+  await page.keyboard.press("Enter");
   await page.getByRole("button", { name: "町の自転車施策で実証地域を絞る" }).focus();
   await page.keyboard.press("Enter");
   await page.getByRole("button", { name: "Decision Traceを生成" }).focus();

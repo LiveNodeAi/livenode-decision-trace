@@ -11,8 +11,8 @@ type InputPanelProps = {
 export function InputPanel({ memo, error, generating, onMemoChange, onSubmit }: InputPanelProps) {
   return (
     <section className="input-panel" aria-labelledby="input-title">
-      <h2 id="input-title">判断メモを入力</h2>
-      <p>会議メモや検討中の文章を、追跡できる6つの判断要素に整理します。</p>
+      <h2 id="input-title">アイデアメモを整理する</h2>
+      <p>ひとつのアイデアや検討内容を、追跡できる6つの判断要素に整理します。</p>
 
       <div className="samples" aria-label="サンプル">
         <p className="section-label">Sample signals</p>

@@ -57,7 +57,7 @@ function sourceRangesMatch(value: unknown[], expected: DetectedTopic["ranges"]):
 }
 
 export function DecisionTraceApp() {
-  const [mode, setMode] = useState<"single" | "transcript">("single");
+  const [mode, setMode] = useState<"single" | "transcript">("transcript");
   const [state, setState] = useState<AppState>({ status: "input", memo: "", error: null });
   const [transcriptState, setTranscriptState] = useState<TranscriptState>({ status: "input", transcript: "", error: null });
   const poolRef = useRef<TopicPoolController<TopicTraceResult> | null>(null);
@@ -198,8 +198,8 @@ export function DecisionTraceApp() {
   return (
     <>
       <nav className="mode-switch" aria-label="入力モード">
-        <button type="button" aria-pressed={mode === "single"} onClick={() => setMode("single")} disabled={busy}>単一メモモード</button>
-        <button type="button" aria-pressed={mode === "transcript"} onClick={() => setMode("transcript")} disabled={busy}>文字起こしモード</button>
+        <button type="button" aria-pressed={mode === "transcript"} onClick={() => setMode("transcript")} disabled={busy}>会議・文字起こし</button>
+        <button type="button" aria-pressed={mode === "single"} onClick={() => setMode("single")} disabled={busy}>アイデアメモ</button>
       </nav>
       {mode === "single" ? (state.status === "result" ? (
         <ResultPanel trace={state.trace} highImpact={state.highImpact} onReset={() => setState({ status: "input", memo: "", error: null })} />

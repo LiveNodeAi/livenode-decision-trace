@@ -39,6 +39,12 @@ function response(status: number, body: unknown): Response {
   });
 }
 
+async function renderIdeaMode() {
+  const view = render(<DecisionTraceApp />);
+  await userEvent.click(screen.getByRole("button", { name: "アイデアメモ" }));
+  return view;
+}
+
 describe("DecisionTraceApp", () => {
   const fetchMock = vi.fn<typeof fetch>();
   const writeText = vi.fn<(text: string) => Promise<void>>();
@@ -55,9 +61,22 @@ describe("DecisionTraceApp", () => {
     });
   });
 
+  it("shows meeting transcript first and switches to the idea memo", async () => {
+    render(<DecisionTraceApp />);
+    const modeButtons = within(screen.getByRole("navigation", { name: "入力モード" })).getAllByRole("button");
+    expect(modeButtons.map((button) => button.textContent)).toEqual(["会議・文字起こし", "アイデアメモ"]);
+    expect(modeButtons[0]).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("heading", { name: "会議・文字起こしからテーマを見つける" })).toBeInTheDocument();
+    expect(screen.getByText(/30,000文字/)).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "文字起こし" })).toHaveFocus();
+
+    await userEvent.click(modeButtons[1]);
+    expect(screen.getByRole("heading", { name: "アイデアメモを整理する" })).toBeInTheDocument();
+    expect(screen.getByText(/12,000文字/)).toBeInTheDocument();
+  });
+
   it("rejects a 30,001-character transcript without calling fetch", async () => {
     render(<DecisionTraceApp />);
-    await userEvent.click(screen.getByRole("button", { name: "文字起こしモード" }));
     fireEvent.change(screen.getByRole("textbox", { name: "文字起こし" }), { target: { value: "あ".repeat(30_001) } });
     await userEvent.click(screen.getByRole("button", { name: "テーマを検出" }));
     expect(screen.getByRole("alert")).toHaveTextContent("30,000文字以内");
@@ -66,7 +85,7 @@ describe("DecisionTraceApp", () => {
 
   it("supports keyboard mode switching and exposes named non-autofill transcript fields", async () => {
     render(<DecisionTraceApp />);
-    const transcriptMode = screen.getByRole("button", { name: "文字起こしモード" });
+    const transcriptMode = screen.getByRole("button", { name: "会議・文字起こし" });
     transcriptMode.focus();
     await userEvent.keyboard("{Enter}");
     const transcriptInput = screen.getByRole("textbox", { name: "文字起こし" });
@@ -111,7 +130,6 @@ describe("DecisionTraceApp", () => {
     Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: revokeObjectURL });
 
     render(<DecisionTraceApp />);
-    await userEvent.click(screen.getByRole("button", { name: "文字起こしモード" }));
     await userEvent.type(screen.getByRole("textbox", { name: "文字起こし" }), transcript);
     await userEvent.click(screen.getByRole("button", { name: "テーマを検出" }));
 
@@ -124,8 +142,8 @@ describe("DecisionTraceApp", () => {
     await userEvent.click(screen.getByRole("button", { name: "選択した3件を生成" }));
 
     expect(await screen.findByRole("status")).toHaveTextContent("0/3生成中");
-    expect(screen.getByRole("button", { name: "単一メモモード" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "文字起こしモード" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "アイデアメモ" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "会議・文字起こし" })).toBeDisabled();
     expect(fetchMock.mock.calls.filter(([candidate]) => String(candidate).endsWith("/api/topics/analyze"))).toHaveLength(2);
     resolveFirst(response(200, {
       topicId: "topic-1", attemptId: "attempt-1", sourceRanges: topics[0].ranges, trace, highImpact: false,
@@ -180,7 +198,6 @@ describe("DecisionTraceApp", () => {
         topicId: "topic-2", attemptId: "wrong", sourceRanges: [{ ...topic.ranges[0], end: topic.ranges[0].end - 1 }], trace, highImpact: false,
       }));
     render(<DecisionTraceApp />);
-    await userEvent.click(screen.getByRole("button", { name: "文字起こしモード" }));
     await userEvent.type(screen.getByRole("textbox", { name: "文字起こし" }), transcript);
     await userEvent.click(screen.getByRole("button", { name: "テーマを検出" }));
     await userEvent.click(await screen.findByRole("button", { name: "選択した1件を生成" }));
@@ -204,7 +221,7 @@ describe("DecisionTraceApp", () => {
   });
 
   it("fills the memo with the public-policy sample", async () => {
-    render(<DecisionTraceApp />);
+    await renderIdeaMode();
 
     await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
 
@@ -212,7 +229,7 @@ describe("DecisionTraceApp", () => {
   });
 
   it("shows localized guidance for short input without calling fetch", async () => {
-    render(<DecisionTraceApp />);
+    await renderIdeaMode();
     await userEvent.type(screen.getByRole("textbox", { name: "判断メモ" }), "短いメモ");
 
     await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));
@@ -223,7 +240,7 @@ describe("DecisionTraceApp", () => {
 
   it("disables generation and announces progress while submitting", async () => {
     fetchMock.mockReturnValue(new Promise(() => undefined));
-    render(<DecisionTraceApp />);
+    await renderIdeaMode();
     await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
 
     await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));
@@ -235,7 +252,7 @@ describe("DecisionTraceApp", () => {
 
   it("renders exactly six named sections, confidence, and grounding labels", async () => {
     fetchMock.mockResolvedValue(response(200, { trace, highImpact: false }));
-    render(<DecisionTraceApp />);
+    await renderIdeaMode();
     await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
     await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));
 
@@ -255,7 +272,7 @@ describe("DecisionTraceApp", () => {
 
   it("shows and exports a qualified-review notice for high-impact decisions", async () => {
     fetchMock.mockResolvedValue(response(200, { trace, highImpact: true }));
-    render(<DecisionTraceApp />);
+    await renderIdeaMode();
     await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
     await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));
 
@@ -274,7 +291,7 @@ describe("DecisionTraceApp", () => {
   ])("retains the memo and offers retry guidance after %i", async (status, message) => {
     const error = status === 429 ? "RATE_LIMITED" : status === 413 ? "REQUEST_TOO_LARGE" : "ANALYSIS_TIMEOUT";
     fetchMock.mockResolvedValue(response(status, { error }));
-    render(<DecisionTraceApp />);
+    await renderIdeaMode();
     await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
     await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));
 
@@ -290,7 +307,7 @@ describe("DecisionTraceApp", () => {
     ["ANALYSIS_REQUEST_REJECTED", "分析リクエストを受け付けられませんでした", "The analysis request was rejected"],
   ])("shows safe bilingual guidance for %s", async (error, japanese, english) => {
     fetchMock.mockResolvedValue(response(error === "ANALYSIS_BUSY" ? 503 : 422, { error }));
-    render(<DecisionTraceApp />);
+    await renderIdeaMode();
     await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
     await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));
 
@@ -302,7 +319,7 @@ describe("DecisionTraceApp", () => {
 
   it("rejects a malformed successful response and preserves the memo for retry", async () => {
     fetchMock.mockResolvedValue(response(200, { trace: { language: "ja" } }));
-    render(<DecisionTraceApp />);
+    await renderIdeaMode();
     await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
     await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));
 
@@ -313,7 +330,7 @@ describe("DecisionTraceApp", () => {
 
   it("copies both formatter outputs", async () => {
     fetchMock.mockResolvedValue(response(200, { trace }));
-    render(<DecisionTraceApp />);
+    await renderIdeaMode();
     await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
     await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));
 
@@ -328,7 +345,7 @@ describe("DecisionTraceApp", () => {
   it("announces a localized clipboard rejection as an accessible error", async () => {
     writeText.mockRejectedValue(new Error("permission denied"));
     fetchMock.mockResolvedValue(response(200, { trace }));
-    render(<DecisionTraceApp />);
+    await renderIdeaMode();
     await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
     await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));
 
@@ -340,7 +357,7 @@ describe("DecisionTraceApp", () => {
   it("announces unavailable clipboard support in English", async () => {
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined });
     fetchMock.mockResolvedValue(response(200, { trace: { ...trace, language: "en" } }));
-    render(<DecisionTraceApp />);
+    await renderIdeaMode();
     await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
     await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));
 
@@ -351,7 +368,7 @@ describe("DecisionTraceApp", () => {
 
   it("starts over with an empty input", async () => {
     fetchMock.mockResolvedValue(response(200, { trace }));
-    render(<DecisionTraceApp />);
+    await renderIdeaMode();
     await userEvent.click(screen.getByRole("button", { name: publicPolicySample.title }));
     await userEvent.click(screen.getByRole("button", { name: "Decision Traceを生成" }));
     await userEvent.click(await screen.findByRole("button", { name: "最初からやり直す" }));
