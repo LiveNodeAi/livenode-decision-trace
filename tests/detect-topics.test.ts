@@ -45,6 +45,33 @@ describe("detectTopics", () => {
     expect(Object.keys(rangeProperties)).toEqual(["excerpt"]);
   });
 
+  it("resolves reverse-ordered excerpts independently and returns source order", async () => {
+    const emojiTranscript = "先に😀試験公開を決めた。後で対象を十社に決めた。";
+    const firstExcerpt = "😀試験公開を決めた";
+    const secondExcerpt = "対象を十社に決めた";
+    const client = clientWith({ topics: [{
+      id: "topic-1", title: "試験公開", summary: "段階的に公開する。",
+      ranges: [{ excerpt: secondExcerpt }, { excerpt: firstExcerpt }],
+    }] });
+
+    const result = await detectTopics({ client, transcript: emojiTranscript, model: "gpt-5.4-nano" });
+    expect(result.topics[0].ranges).toEqual([
+      { start: emojiTranscript.indexOf(firstExcerpt), end: emojiTranscript.indexOf(firstExcerpt) + firstExcerpt.length, excerpt: firstExcerpt },
+      { start: emojiTranscript.indexOf(secondExcerpt), end: emojiTranscript.indexOf(secondExcerpt) + secondExcerpt.length, excerpt: secondExcerpt },
+    ]);
+  });
+
+  it("rejects an excerpt that is not unique in the transcript", async () => {
+    const repeated = "試験公開を決めた。別の話。試験公開を決めた。";
+    const client = clientWith({ topics: [{
+      id: "topic-1", title: "試験公開", summary: "公開方法を決めた。",
+      ranges: [{ excerpt: "試験公開を決めた" }],
+    }] });
+
+    await expect(detectTopics({ client, transcript: repeated, model: "gpt-5.4-nano" }))
+      .rejects.toMatchObject({ code: "MALFORMED_RESPONSE" });
+  });
+
   it("uses the low-cost model with strict structured output and privacy controls", async () => {
     const client = clientWith(validTopics());
 
