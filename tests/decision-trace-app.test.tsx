@@ -126,6 +126,13 @@ describe("DecisionTraceApp", () => {
     await userEvent.click(screen.getByRole("button", { name: "編集した議題Bを再試行" }));
     expect(await screen.findAllByTestId("multi-trace-success")).toHaveLength(3);
     expect(fetchMock.mock.calls.filter(([candidate]) => String(candidate).endsWith("/api/topics/analyze"))).toHaveLength(4);
+    expect(screen.getByRole("heading", { name: "Decision TraceからKXへ" })).toBeInTheDocument();
+    expect(screen.getByText(/Markdown ZIPだけが.*実際に動く保存操作/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Web版.*取り込み層/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /ローカルKX.*精錬層/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /配布Skill.*将来の提供層/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Obsidian|Notion|AI-Brain/ })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Markdown ZIPをダウンロード" })).toHaveLength(1);
     const ids = Array.from(document.querySelectorAll("[id]"), (element) => element.id);
     expect(new Set(ids).size).toBe(ids.length);
 

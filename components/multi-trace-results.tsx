@@ -6,6 +6,7 @@ import type { TopicTraceResult } from "@/lib/analyze-topic";
 import { createMeetingZip, type MeetingExportInput } from "@/lib/meeting-export";
 import type { DetectedTopic } from "@/lib/transcript-contract";
 import { ResultPanel } from "./result-panel";
+import { StorageAdapters } from "./storage-adapters";
 
 export type MultiTraceEntry = {
   topic: DetectedTopic;
@@ -66,6 +67,9 @@ export function MultiTraceResults({ entries, onRetry, onReset }: MultiTraceResul
           {entry.retryable ? <button type="button" onClick={() => onRetry(entry.topic.id)} disabled={entry.retrying}>{entry.editedTitle}を再試行</button> : null}
         </article>
       ))}
+      <div className="storage-adapters-wrap">
+        <StorageAdapters />
+      </div>
       <div className="result-actions">
         <button type="button" onClick={download} disabled={successful.length === 0}>Markdown ZIPをダウンロード</button>
         <button type="button" onClick={onReset}>最初からやり直す</button>
