@@ -200,7 +200,7 @@ export function DecisionTraceApp() {
     : transcriptState.status === "generating"
       ? 3
       : transcriptState.status === "result"
-        ? 4
+        ? (transcriptState.entries.some((entry) => entry.result) ? 4 : 3)
         : 1;
 
   return (

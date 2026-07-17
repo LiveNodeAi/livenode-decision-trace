@@ -199,6 +199,33 @@ describe("DecisionTraceApp", () => {
     await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledOnce());
   });
 
+  it("keeps the flow at Trace generation when every topic fails and disables ZIP", async () => {
+    const transcript = `${"会議背景。".repeat(20)}議題Aを決めます。議題Bを決めます。`;
+    const topics = ["議題A", "議題B"].map((title, index) => {
+      const excerpt = `${title}を決めます。`;
+      const start = transcript.indexOf(excerpt);
+      return {
+        id: `topic-${index + 1}` as "topic-1" | "topic-2",
+        title,
+        summary: `${title}の判断`,
+        ranges: [{ start, end: start + excerpt.length, excerpt }],
+      };
+    });
+    fetchMock.mockImplementation((input) => String(input).endsWith("/api/topics/detect")
+      ? Promise.resolve(response(200, { transcriptHash: "a".repeat(64), topics }))
+      : Promise.resolve(response(422, { error: "TOPIC_NOT_GROUNDED", retryable: false })));
+
+    render(<DecisionTraceApp />);
+    await userEvent.type(screen.getByRole("textbox", { name: "文字起こし" }), transcript);
+    await userEvent.click(screen.getByRole("button", { name: "テーマを検出" }));
+    await userEvent.click(await screen.findByRole("button", { name: "選択した2件を生成" }));
+
+    expect(await screen.findByText("0/2件完了")).toBeInTheDocument();
+    expect(screen.getByRole("listitem", { name: /3Trace生成/ })).toHaveAttribute("aria-current", "step");
+    expect(screen.getByRole("listitem", { name: /4ZIP保存/ })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("button", { name: "Markdown ZIPをダウンロード" })).toBeDisabled();
+  });
+
   it("rejects an analyzed topic response whose id or source ranges do not match the request", async () => {
     const transcript = `${"会議背景。".repeat(20)}議題Aを決めます。`;
     const excerpt = "議題Aを決めます。";
