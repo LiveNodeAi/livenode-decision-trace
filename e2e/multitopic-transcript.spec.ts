@@ -41,6 +41,10 @@ async function enterTranscriptMode(page: Page) {
   const modes = page.getByRole("navigation", { name: "入力モード" }).getByRole("button");
   await expect(modes).toHaveText(["会議・文字起こし", "アイデアメモ"]);
   await expect(modes.first()).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText("会議ログを最大5テーマへ分け、判断の経緯と次の行動をMarkdownにします。")).toBeVisible();
+  const steps = page.getByRole("list", { name: "会議ログからMarkdownまでの流れ" }).getByRole("listitem");
+  await expect(steps).toHaveCount(4);
+  await expect(steps.first()).toHaveAttribute("aria-current", "step");
   await expect(page.getByRole("textbox", { name: "文字起こし" })).toBeFocused();
 }
 
@@ -48,6 +52,7 @@ async function detectFive(page: Page) {
   await page.getByRole("textbox", { name: "文字起こし" }).fill(transcript);
   await page.getByRole("button", { name: "テーマを検出" }).click();
   await expect(page.getByTestId("topic-review-item")).toHaveCount(5);
+  await expect(page.getByRole("listitem", { name: /2テーマ確認/ })).toHaveAttribute("aria-current", "step");
 }
 
 async function assertNoHorizontalOverflow(page: Page) {
@@ -101,6 +106,7 @@ test("5テーマを最大2並列で処理し、部分失敗だけ再試行して
   await page.getByRole("button", { name: "選択した4件を生成" }).click();
 
   await expect(page.getByRole("heading", { name: "複数テーマのDecision Trace" })).toBeVisible();
+  await expect(page.getByRole("listitem", { name: /4確認・保存/ })).toHaveAttribute("aria-current", "step");
   await expect(page.getByText("3/4件完了")).toBeVisible();
   expect(maximum).toBe(2);
   expect(attempts.get("topic-5")).toBeUndefined();

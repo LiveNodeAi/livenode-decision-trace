@@ -1,25 +1,51 @@
-# Task 2 report: topic detection API
+# Task 2 Report: タイトル下の説明と4段階ステッパー
 
-## Implemented
+## Status
 
-- Added `detectTopics` with `gpt-5.4-nano`-compatible Responses API request settings: `reasoning.effort: none`, `max_output_tokens: 2500`, `store: false`, and strict JSON Schema output.
-- Added prompt-injection resistance and explicit decision-only, maximum-five, verbatim UTF-16 range instructions.
-- Validated provider output with the Task 1 topic contract and exact `transcript.slice(start, end) === excerpt` grounding before hashing and returning it.
-- Added one retry for malformed structured output and stable provider error classification.
-- Added `POST /api/topics/detect` with 140 KiB pre-parse streaming rejection, transcript validation, a detection-specific rate key, safe `{ error, retryable }` responses, and no request/provider logging.
-- Added separate model and Cloudflare rate-limit bindings.
+完了。会議・文字起こしモードに短い用途説明と、既存stateだけから進行状況を表示する4段階ステッパーを追加した。API実呼び出しとdeployは実施していない。
 
-## TDD evidence
+## Implementation
 
-- RED: `npx vitest run tests/detect-topics.test.ts tests/api-topics-detect.test.ts` failed because both implementation imports did not exist.
-- GREEN: `npx vitest run tests/detect-topics.test.ts tests/api-topics-detect.test.ts tests/api-analyze.test.ts` passed 37/37.
-- Build: `npm run build` completed successfully and included `/api/topics/detect`.
-- Diff hygiene: scoped `git diff --check` passed.
+- `FlowStepper`を追加し、`FlowStep = 1 | 2 | 3 | 4`を公開
+- 工程を `貼り付け` → `テーマ確認` → `Trace生成` → `確認・保存` として表示
+- `transcriptState.status`から現在工程を算出
+  - input / detecting: 1
+  - review: 2
+  - generating: 3
+  - result: 4
+- 現在工程へ`aria-current="step"`と「現在」文言を付与
+- 完了工程へ`flow-step-complete`クラスと「完了」文言を付与
+- 各工程へ明示的なaccessible nameを付与
+- 短い説明 `会議ログを最大5テーマへ分け、判断の経緯と次の行動をMarkdownにします。` を表示
+- PCは4列＋三角区切り、759px以下は2列として横スクロールを防止
+- 既存のcyan/muted/surface/lineカラー変数のみを使用
+- アイデアメモモードでは会議用フローを非表示
 
-## Full-suite status
+## TDD Evidence
 
-`npm test` passed 116 existing/available tests but the suite is not globally green because concurrent Task 3/Task 4 work is incomplete: `tests/api-topics-analyze.test.ts` cannot yet import its route and `tests/meeting-export.test.ts` cannot yet resolve `jszip`. Neither failure is in Task 2 files.
+1. 初期・review・generating・resultの工程、完了クラス、読み上げ文言を先にテスト追加
+2. 説明とステッパー未存在によるREDを確認
+3. 最小実装後、listitemのaccessible name不足を検出
+4. `aria-label`を追加し対象23件をGREEN化
 
-## Risks / follow-up
+## Verification
 
-- `TOPIC_DETECTION_RATE_LIMITER.namespace_id` is configured as `1089732`; deployment must use an available Cloudflare namespace ID for the target account.
+- `npx vitest run tests/decision-trace-app.test.tsx`: 23 passed
+- `npx playwright test e2e/multitopic-transcript.spec.ts`: 6 passed
+  - desktop 1440px: 3 passed
+  - mobile 375px: 3 passed
+  - APIはPlaywright route mockのみ
+- `npm test`: 全テスト passed
+- `npm run build`: passed
+
+## Files
+
+- `components/flow-stepper.tsx`
+- `components/decision-trace-app.tsx`
+- `app/globals.css`
+- `tests/decision-trace-app.test.tsx`
+- `e2e/multitopic-transcript.spec.ts`
+
+## Concerns
+
+なし。新しいstateや永続化は追加していない。

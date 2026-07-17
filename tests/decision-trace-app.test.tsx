@@ -69,6 +69,13 @@ describe("DecisionTraceApp", () => {
     expect(screen.getByRole("heading", { name: "会議・文字起こしからテーマを見つける" })).toBeInTheDocument();
     expect(screen.getByText(/30,000文字/)).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "文字起こし" })).toHaveFocus();
+    expect(screen.getByText("会議ログを最大5テーマへ分け、判断の経緯と次の行動をMarkdownにします。")).toBeInTheDocument();
+    const steps = within(screen.getByRole("list", { name: "会議ログからMarkdownまでの流れ" })).getAllByRole("listitem");
+    expect(steps).toHaveLength(4);
+    expect(steps.map((step) => step.textContent)).toEqual([
+      "1貼り付け現在", "2テーマ確認", "3Trace生成", "4確認・保存",
+    ]);
+    expect(steps[0]).toHaveAttribute("aria-current", "step");
 
     await userEvent.click(modeButtons[1]);
     expect(screen.getByRole("heading", { name: "アイデアメモを整理する" })).toBeInTheDocument();
@@ -134,6 +141,8 @@ describe("DecisionTraceApp", () => {
     await userEvent.click(screen.getByRole("button", { name: "テーマを検出" }));
 
     expect(await screen.findAllByTestId("topic-review-item")).toHaveLength(4);
+    expect(screen.getByRole("listitem", { name: /2テーマ確認/ })).toHaveAttribute("aria-current", "step");
+    expect(screen.getByRole("listitem", { name: /1貼り付け完了/ })).toHaveClass("flow-step-complete");
     expect(screen.getByRole("heading", { name: "生成するテーマを確認" })).toHaveFocus();
     await userEvent.click(screen.getByRole("checkbox", { name: /議題Dを生成対象にする/ }));
     const titleB = screen.getByRole("textbox", { name: "議題Bのタイトル" });
@@ -142,6 +151,7 @@ describe("DecisionTraceApp", () => {
     await userEvent.click(screen.getByRole("button", { name: "選択した3件を生成" }));
 
     expect(await screen.findByRole("status")).toHaveTextContent("0/3生成中");
+    expect(screen.getByRole("listitem", { name: /3Trace生成/ })).toHaveAttribute("aria-current", "step");
     expect(screen.getByRole("button", { name: "アイデアメモ" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "会議・文字起こし" })).toBeDisabled();
     expect(fetchMock.mock.calls.filter(([candidate]) => String(candidate).endsWith("/api/topics/analyze"))).toHaveLength(2);
@@ -151,6 +161,8 @@ describe("DecisionTraceApp", () => {
     await userEvent.click(screen.getByRole("button", { name: "編集した議題Bを中止" }));
 
     expect(await screen.findByText("編集した議題Bの生成に失敗しました")).toBeInTheDocument();
+    expect(screen.getByRole("listitem", { name: /4確認・保存/ })).toHaveAttribute("aria-current", "step");
+    expect(screen.getByRole("listitem", { name: /3Trace生成完了/ })).toHaveClass("flow-step-complete");
     expect(await screen.findAllByTestId("multi-trace-success")).toHaveLength(2);
     expect(screen.getAllByText("議題A").length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "複数テーマのDecision Trace" })).toHaveFocus();

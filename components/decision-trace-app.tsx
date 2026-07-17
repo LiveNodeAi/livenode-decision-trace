@@ -8,6 +8,7 @@ import { createTopicPool, type TopicPoolController } from "@/lib/topic-pool";
 import { topicDetectionSchema, type DetectedTopic } from "@/lib/transcript-contract";
 import { validateMemo } from "@/lib/validation";
 import { InputPanel } from "./input-panel";
+import { FlowStepper, type FlowStep } from "./flow-stepper";
 import { MultiTraceResults, type MultiTraceEntry } from "./multi-trace-results";
 import { ResultPanel } from "./result-panel";
 import { TopicReviewPanel, type ReviewedTopic } from "./topic-review-panel";
@@ -194,9 +195,22 @@ export function DecisionTraceApp() {
 
   const resetTranscript = () => { poolRef.current = null; setTranscriptState({ status: "input", transcript: "", error: null }); };
   const busy = state.status === "generating" || transcriptState.status === "detecting" || transcriptState.status === "generating";
+  const flowStep: FlowStep = transcriptState.status === "review"
+    ? 2
+    : transcriptState.status === "generating"
+      ? 3
+      : transcriptState.status === "result"
+        ? 4
+        : 1;
 
   return (
     <>
+      {mode === "transcript" ? (
+        <section className="flow-overview" aria-label="会議ログの処理フロー">
+          <p>会議ログを最大5テーマへ分け、判断の経緯と次の行動をMarkdownにします。</p>
+          <FlowStepper current={flowStep} />
+        </section>
+      ) : null}
       <nav className="mode-switch" aria-label="入力モード">
         <button type="button" aria-pressed={mode === "transcript"} onClick={() => setMode("transcript")} disabled={busy}>会議・文字起こし</button>
         <button type="button" aria-pressed={mode === "single"} onClick={() => setMode("single")} disabled={busy}>アイデアメモ</button>
