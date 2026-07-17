@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { DetectedTopic } from "@/lib/transcript-contract";
-import { runTopicPool } from "@/lib/topic-pool";
+import { createTopicPool, runTopicPool } from "@/lib/topic-pool";
 
 function topic(index: number): DetectedTopic {
   return { id: `topic-${index}` as DetectedTopic["id"], title: `Topic ${index}`, summary: "Summary", ranges: [{ start: 0, end: 1, excerpt: "a" }] };
@@ -45,18 +45,19 @@ describe("runTopicPool", () => {
     expect(results[2]).toMatchObject({ topic: { id: "topic-3" }, state: "retryable-error" });
   });
 
-  it("retries only the failed topic when called with that item", async () => {
+  it("retries only the failed topic through the same controller", async () => {
     let first = true;
     const worker = vi.fn(async (item: DetectedTopic) => {
       if (item.id === "topic-2" && first) { first = false; throw Object.assign(new Error(), { retryable: true }); }
       return item.id;
     });
     const items = [topic(1), topic(2), topic(3)];
-    const initial = await runTopicPool(items, worker);
-    const retry = await runTopicPool([items[1]], worker);
+    const controller = createTopicPool(worker);
+    const initial = await controller.run(items);
+    const retry = await controller.retry(items[1]);
 
     expect(initial[1].state).toBe("retryable-error");
-    expect(retry[0]).toMatchObject({ state: "complete", value: "topic-2" });
+    expect(retry).toMatchObject({ state: "complete", value: "topic-2" });
     expect(worker.mock.calls.map(([item]) => item.id)).toEqual(["topic-1", "topic-2", "topic-3", "topic-2"]);
   });
 
@@ -70,16 +71,33 @@ describe("runTopicPool", () => {
     expect(results[0]).toMatchObject({ value: "topic-1" });
   });
 
-  it("deduplicates the same in-flight topic across double-click calls", async () => {
+  it("a stable controller deduplicates inline callers for the same in-flight topic", async () => {
     let release!: () => void;
     const worker = vi.fn(async () => { await new Promise<void>((resolve) => { release = resolve; }); return "done"; });
-    const first = runTopicPool([topic(1)], worker);
-    const second = runTopicPool([topic(1)], worker);
+    const controller = createTopicPool(worker);
+    const click = () => controller.run([topic(1)]);
+    const first = click();
+    const second = click();
     await vi.waitFor(() => expect(worker).toHaveBeenCalledTimes(1));
     release();
 
     expect(await first).toEqual(await second);
     expect(worker).toHaveBeenCalledTimes(1);
+  });
+
+  it("clamps unsafe JavaScript concurrency above two", async () => {
+    let active = 0;
+    let maximum = 0;
+    const worker = async (item: DetectedTopic) => {
+      active += 1;
+      maximum = Math.max(maximum, active);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      active -= 1;
+      return item.id;
+    };
+
+    await runTopicPool([topic(1), topic(2), topic(3), topic(4), topic(5)], worker, 3 as 2);
+    expect(maximum).toBe(2);
   });
 
   it("marks non-retryable failures fatal and rejects invalid concurrency", async () => {
