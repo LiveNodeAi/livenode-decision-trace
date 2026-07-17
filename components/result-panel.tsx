@@ -37,15 +37,19 @@ type ResultPanelProps = {
   trace: DecisionTrace;
   highImpact: boolean;
   onReset?: () => void;
+  headingLevel?: 2 | 4;
 };
 
-export function ResultPanel({ trace, highImpact, onReset }: ResultPanelProps) {
+export function ResultPanel({ trace, highImpact, onReset, headingLevel = 2 }: ResultPanelProps) {
   const resultTitleId = `result-${useId().replaceAll(":", "")}`;
   const [copyNotice, setCopyNotice] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const ja = trace.language === "ja";
   const labels = ja
     ? ["状況", "前提", "判断基準", "選択肢", "推奨", "次のアクション"]
     : ["Situation", "Assumptions", "Criteria", "Options", "Recommendation", "Next actions"];
+  const SummaryHeading = headingLevel === 4 ? "h4" : "h2";
+  const traceHeadingLevel = headingLevel === 4 ? 5 : 2;
+  const DetailHeading = headingLevel === 4 ? "h6" : "h3";
 
   async function copy(markdown: string, format: "Decision Trace" | "KX Note") {
     try {
@@ -68,7 +72,7 @@ export function ResultPanel({ trace, highImpact, onReset }: ResultPanelProps) {
   return (
     <section className="result-panel" aria-labelledby={resultTitleId}>
       <header className="result-summary">
-        <div><p className="section-label">Resolved signal</p><h2 id={resultTitleId}>{ja ? "Decision Traceの結果" : "Decision Trace result"}</h2></div>
+        <div><p className="section-label">Resolved signal</p><SummaryHeading id={resultTitleId}>{ja ? "Decision Traceの結果" : "Decision Trace result"}</SummaryHeading></div>
         <div className="recommendation"><p><strong>{trace.recommendation.option}</strong></p>
         <p>{ja ? "確信度" : "Confidence"}: {confidence[trace.language][trace.recommendation.confidence]}</p></div>
       </header>
@@ -82,22 +86,22 @@ export function ResultPanel({ trace, highImpact, onReset }: ResultPanelProps) {
       ) : null}
 
       <div className="trace-grid">
-        <TraceCard index={1} title={labels[0]}>
+        <TraceCard index={1} title={labels[0]} headingLevel={traceHeadingLevel}>
           <p><strong>{ja ? "AIによる要約" : "AI summary"}</strong></p>
           <p><strong>{ja ? "判断" : "Decision"}:</strong> {trace.situation.decision}</p>
           <GroundedList items={trace.situation.context} language={trace.language} />
         </TraceCard>
-        <TraceCard index={2} title={labels[1]}>
+        <TraceCard index={2} title={labels[1]} headingLevel={traceHeadingLevel}>
           <GroundedList items={trace.assumptions} language={trace.language} />
         </TraceCard>
-        <TraceCard index={3} title={labels[2]}>
+        <TraceCard index={3} title={labels[2]} headingLevel={traceHeadingLevel}>
           <GroundedList items={trace.criteria} language={trace.language} />
         </TraceCard>
-        <TraceCard index={4} title={labels[3]}>
+        <TraceCard index={4} title={labels[3]} headingLevel={traceHeadingLevel}>
           <p><strong>{ja ? "AIによる選択肢整理" : "AI-organized options"}</strong></p>
           {trace.options.map((option) => (
             <article key={option.name}>
-              <h3>{option.name}</h3>
+              <DetailHeading>{option.name}</DetailHeading>
               <p><strong>{ja ? "利点" : "Benefits"}:</strong> {option.benefits.join("、")}</p>
               <p><strong>{ja ? "コスト" : "Costs"}:</strong> {option.costs.join("、")}</p>
               <p><strong>{ja ? "リスク" : "Risks"}:</strong> {option.risks.length ? option.risks.join("、") : (ja ? "なし" : "None")}</p>
@@ -105,14 +109,14 @@ export function ResultPanel({ trace, highImpact, onReset }: ResultPanelProps) {
             </article>
           ))}
         </TraceCard>
-        <TraceCard index={5} title={labels[4]}>
+        <TraceCard index={5} title={labels[4]} headingLevel={traceHeadingLevel}>
           <p><strong>{ja ? "AIによる推奨" : "AI recommendation"}</strong></p>
           <p><strong>{trace.recommendation.option}</strong></p>
           <GroundedList items={trace.recommendation.reasoning} language={trace.language} />
-          <h3>{ja ? "判断を変える条件" : "Change conditions"}</h3>
+          <DetailHeading>{ja ? "判断を変える条件" : "Change conditions"}</DetailHeading>
           <ul>{trace.recommendation.changeConditions.map((item) => <li key={item}>{item}</li>)}</ul>
         </TraceCard>
-        <TraceCard index={6} title={labels[5]}>
+        <TraceCard index={6} title={labels[5]} headingLevel={traceHeadingLevel}>
           <p><strong>{ja ? "AIによるアクション案" : "AI-proposed actions"}</strong></p>
           <ol>
             {[...trace.nextActions].sort((a, b) => a.order - b.order).map((item) => (

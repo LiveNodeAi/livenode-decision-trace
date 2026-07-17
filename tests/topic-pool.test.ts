@@ -98,6 +98,24 @@ describe("runTopicPool", () => {
     expect(results.map(({ state }) => state)).toEqual(["complete", "retryable-error", "complete"]);
   });
 
+  it("cancels a queued third topic before its worker starts and keeps completed results", async () => {
+    const releases = new Map<string, () => void>();
+    const started: string[] = [];
+    const controller = createTopicPool(async (item) => {
+      started.push(item.id);
+      await new Promise<void>((resolve) => releases.set(item.id, resolve));
+      return item.id;
+    });
+    const pending = controller.run([topic(1), topic(2), topic(3)]);
+    await vi.waitFor(() => expect(started).toEqual(["topic-1", "topic-2"]));
+    expect(controller.cancel("topic-3")).toBe(true);
+    releases.get("topic-1")!();
+    releases.get("topic-2")!();
+    const results = await pending;
+    expect(started).toEqual(["topic-1", "topic-2"]);
+    expect(results.map(({ state }) => state)).toEqual(["complete", "complete", "retryable-error"]);
+  });
+
   it("classifies cancellation as retryable without changing completed results", async () => {
     const worker = async (item: DetectedTopic) => {
       if (item.id === "topic-2") throw Object.assign(new Error("cancelled"), { name: "AbortError" });

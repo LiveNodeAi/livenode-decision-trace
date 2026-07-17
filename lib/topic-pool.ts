@@ -89,17 +89,7 @@ export function createTopicPool<T>(
   }
 
   async function run(items: DetectedTopic[]): Promise<SettledTopic<T>[]> {
-    const results = new Array<SettledTopic<T>>(items.length);
-    let nextIndex = 0;
-    async function consume(): Promise<void> {
-      while (nextIndex < items.length) {
-        const index = nextIndex;
-        nextIndex += 1;
-        results[index] = await runOnce(items[index], worker, inFlight, controllers, withSlot);
-      }
-    }
-    await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => consume()));
-    return results;
+    return Promise.all(items.map((topic) => runOnce(topic, worker, inFlight, controllers, withSlot)));
   }
 
   return {

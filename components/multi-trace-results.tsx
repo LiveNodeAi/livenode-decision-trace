@@ -25,7 +25,7 @@ type MultiTraceResultsProps = {
 
 export function MultiTraceResults({ entries, onRetry, onReset }: MultiTraceResultsProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
-  useEffect(() => { headingRef.current?.focus(); }, [entries]);
+  useEffect(() => { headingRef.current?.focus(); }, []);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const successful = entries.filter((entry) => entry.result);
 
@@ -43,7 +43,12 @@ export function MultiTraceResults({ entries, onRetry, onReset }: MultiTraceResul
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = "decision-trace-meeting.zip";
-      anchor.click();
+      document.body.append(anchor);
+      try {
+        anchor.click();
+      } finally {
+        anchor.remove();
+      }
       setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch {
       setDownloadError("ZIPを作成できませんでした。もう一度お試しください。");
@@ -74,7 +79,7 @@ export function MultiTraceResults({ entries, onRetry, onReset }: MultiTraceResul
       {entries.map((entry) => entry.result ? (
         <article key={entry.topic.id} data-testid="multi-trace-success" className="multi-result-item">
           <h3>{entry.editedTitle}</h3>
-          <ResultPanel trace={entry.result.trace} highImpact={entry.result.highImpact} />
+          <ResultPanel trace={entry.result.trace} highImpact={entry.result.highImpact} headingLevel={4} />
         </article>
       ) : (
         <article key={entry.topic.id} className="multi-result-error" role="alert">

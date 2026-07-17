@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DecisionTraceApp } from "@/components/decision-trace-app";
+import { MultiTraceResults, type MultiTraceEntry } from "@/components/multi-trace-results";
 import { toDecisionTraceMarkdown, toKxNoteMarkdown } from "@/lib/markdown";
 import { samples } from "@/lib/samples";
 import type { DecisionTrace } from "@/lib/decision-trace-schema";
@@ -134,6 +135,7 @@ describe("DecisionTraceApp", () => {
     expect(await screen.findByText("編集した議題Bの生成に失敗しました")).toBeInTheDocument();
     expect(await screen.findAllByTestId("multi-trace-success")).toHaveLength(2);
     expect(screen.getAllByText("議題A").length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: "複数テーマのDecision Trace" })).toHaveFocus();
     await userEvent.click(screen.getByRole("button", { name: "編集した議題Bを再試行" }));
     expect(await screen.findAllByTestId("multi-trace-success")).toHaveLength(3);
     expect(fetchMock.mock.calls.filter(([candidate]) => String(candidate).endsWith("/api/topics/analyze"))).toHaveLength(4);
@@ -144,7 +146,10 @@ describe("DecisionTraceApp", () => {
     expect(screen.getByRole("heading", { name: /配布Skill.*将来の提供層/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Obsidian|Notion|AI-Brain/ })).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Markdown ZIPをダウンロード" })).toHaveLength(1);
-    expect(screen.getByRole("heading", { name: "複数テーマのDecision Trace" })).toHaveFocus();
+    expect(screen.getAllByRole("heading", { level: 3, name: /議題A|編集した議題B|議題C/ })).toHaveLength(3);
+    expect(screen.getAllByRole("heading", { level: 4, name: "Decision Traceの結果" })).toHaveLength(3);
+    expect(screen.getAllByRole("heading", { level: 5, name: "状況" })).toHaveLength(3);
+    expect(screen.getAllByRole("heading", { level: 6, name: "2地域実証" })).toHaveLength(3);
     const map = screen.getByRole("region", { name: "会議全体の判断マップ" });
     expect(within(map).getAllByText("2地域実証")).toHaveLength(3);
     expect(within(map).getAllByText("苦情が一定数を超える")).toHaveLength(3);
@@ -153,9 +158,14 @@ describe("DecisionTraceApp", () => {
     const ids = Array.from(document.querySelectorAll("[id]"), (element) => element.id);
     expect(new Set(ids).size).toBe(ids.length);
 
-    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    let clickedAnchor: { connected: boolean; download: string; href: string } | undefined;
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function () {
+      clickedAnchor = { connected: this.isConnected, download: this.download, href: this.href };
+    });
     await userEvent.click(screen.getByRole("button", { name: "Markdown ZIPをダウンロード" }));
     await waitFor(() => expect(createObjectURL).toHaveBeenCalledOnce());
+    expect(clickedAnchor).toEqual({ connected: true, download: "decision-trace-meeting.zip", href: "blob:meeting-zip" });
+    expect(document.querySelector('a[download="decision-trace-meeting.zip"]')).not.toBeInTheDocument();
     await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledOnce());
   });
 
@@ -176,6 +186,21 @@ describe("DecisionTraceApp", () => {
     await userEvent.click(await screen.findByRole("button", { name: "選択した1件を生成" }));
     expect((await screen.findAllByText("MALFORMED_RESPONSE")).length).toBeGreaterThan(0);
     expect(screen.queryByTestId("multi-trace-success")).not.toBeInTheDocument();
+  });
+
+  it("does not steal focus when multi-result retry state updates", () => {
+    const topic = { id: "topic-1" as const, title: "議題A", summary: "判断", ranges: [{ start: 0, end: 3, excerpt: "議題A" }] };
+    const entry: MultiTraceEntry = {
+      topic,
+      editedTitle: "議題A",
+      errorCode: "PROVIDER_TIMEOUT",
+      retryable: true,
+    };
+    const { rerender } = render(<MultiTraceResults entries={[entry]} onRetry={() => undefined} onReset={() => undefined} />);
+    const reset = screen.getByRole("button", { name: "最初からやり直す" });
+    reset.focus();
+    rerender(<MultiTraceResults entries={[{ ...entry, retrying: true }]} onRetry={() => undefined} onReset={() => undefined} />);
+    expect(reset).toHaveFocus();
   });
 
   it("fills the memo with the public-policy sample", async () => {
