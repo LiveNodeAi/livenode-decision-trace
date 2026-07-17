@@ -8,6 +8,7 @@
 - [ ] 本番デプロイと限定live acceptanceは、実行直前に明示承認を得る。
 - [ ] live acceptanceの通常系は、テーマ検出 **1回** と選択したテーマ分析 **2回** の合計3 API処理だけに固定する。
 - [ ] 自動retryが発生した場合も手動で同じ入力を再実行しない。発生回数と結果をそのまま記録する。
+- [ ] 30,000文字、3テーマ、5テーマ、retry系の確認を理由にlive APIを追加実行しない。実API上限は常に検出1回＋分析2回とする。
 - [ ] 本番確認に使う文字起こし本文、テーマ本文、モデル出力は、文書、スクリーンショット、ログへ保存しない。
 
 ## 1. UI実装後に追加するモック統合E2E
@@ -31,8 +32,11 @@
 - [ ] 30,000 UTF-16 code unitの日本語・絵文字・CRLFを含むfixtureを受理する。
 - [ ] 30,001 code unit、140KiB超、6テーマのmock応答を安全なエラーとして扱う。
 - [ ] 5テーマ選択時も同時に進行する分析リクエストは最大2件である（route handler内のactive数と最大値を記録して`maximum === 2`をassert）。
+- [ ] mock clientで、検出APIと各テーマ分析APIのprovider call数が、内部retry込みでもそれぞれ最大2回であることをassertする。
 - [ ] 生成ボタンの二重クリックで、同一テーマのin-flightリクエストが重複しない。
 - [ ] 完了順が前後しても表示順は確認済みテーマ順を維持する。
+- [ ] 1文字ずれrange、改変excerpt、hash mismatch、0テーマ、重複topic IDを拒否し、分析APIを呼ばない。
+- [ ] テーマ間の過剰重複と全文カバー過多を拒否し、成功結果としてUIへ載せない。
 
 ### 部分成功・個別再試行
 
@@ -40,6 +44,7 @@
 - [ ] 失敗テーマ名、安定した公開エラー、再試行ボタンが表示され、provider本文やstackは表示されない。
 - [ ] 個別再試行では失敗した1テーマだけを再送し、成功済みテーマを再送・消去しない。
 - [ ] 再試行成功後、3テーマすべての結果とZIP対象が更新される。
+- [ ] 処理を中止しても、中止前に完成したテーマ結果とそのZIP対象を保持する。
 - [ ] 全テーマ失敗時はZIPボタンを無効化または非表示にし、成功扱いにしない。
 
 ### ZIP内容
@@ -58,7 +63,7 @@
 - [ ] `git diff --check`
 - [ ] 既存E2Eと新規E2Eがdesktop 1440 / mobile 375の両projectで通る。
 - [ ] Playwright trace、HTML report、console、network mock記録に文字起こし全文や疑似secretを残さない。
-- [ ] ローカル検証の前後でOpenAI Usageが増えていない（実API未使用）。
+- [ ] 受入専用OpenAI project／keyへ絞ってローカル検証前後のUsageを確認し、反映待ち時間を置いた後も増えていない（実API未使用）。共有projectで他trafficと区別できない確認結果は証拠にしない。
 
 ## 3. secret・設定・公開情報の本番前チェック
 
@@ -68,9 +73,9 @@
 - [ ] tracked source、docs、`.next`、`.open-next`のclient配信物を、secret値のbyte列で走査して一致0件。
 - [ ] ブラウザbundleに`OPENAI_API_KEY`の値、Authorization header、provider response、stack traceがない。
 - [ ] Worker secret `OPENAI_API_KEY`が既存のまま保持される。
-- [ ] 非秘密bindingは、現行コードに合わせて`TOPIC_DETECTION_MODEL=gpt-5.4-nano`、`OPENAI_MODEL=gpt-5.6-luna`。
+- [ ] 非秘密bindingは`OPENAI_TOPIC_MODEL=gpt-5.4-nano`、`OPENAI_MODEL=gpt-5.6-luna`。
 - [ ] `TOPIC_DETECTION_RATE_LIMITER`と`DECISION_TRACE_RATE_LIMITER`が存在し、namespace IDが同一Cloudflareアカウント内で意図せず重複していない。
-- [ ] 公開エラーbodyは`{ error, retryable }`だけで、入力、出力、APIキー、provider詳細を含まない。
+- [ ] topic detect／topic analyze APIの公開エラーbodyは`{ error, retryable }`だけで、入力、出力、APIキー、provider詳細を含まない。既存の別APIへこのshapeを一律要求しない。
 - [ ] request body／モデル出力を保存するDB、analytics、application logが追加されていない。
 - [ ] 30,000文字、最大5テーマ、最大2並列、140KiB制限がUI文言・route・テストで一致している。
 
@@ -80,7 +85,8 @@
 
 - [ ] 2つの明確な判断だけを含む、短い非機密の日本語文字起こしを用意する。氏名、自治体内部情報、顧客情報、secretを含めない。
 - [ ] テーマ検出で2〜3件に分かれ、うち2件を分析対象にできる内容にする。
-- [ ] OpenAI Usageの開始時刻、開始時点の利用額・input/output tokenを控える。本文や出力は控えない。
+- [ ] 受入専用OpenAI project／keyを使用し、modelを`gpt-5.4-nano`と`gpt-5.6-luna`へ絞ってUsageを確認できる状態にする。
+- [ ] 他trafficがない時間帯であることを確認し、Usageの開始時刻、開始時点の利用額・input/output tokenを控える。本文や出力は控えない。
 - [ ] Browser DevToolsのNetworkを開き、Preserve logは必要最小限にする。consoleへの本文出力がないことを確認する。
 
 ### 実行（通常は合計3処理）
@@ -104,15 +110,17 @@
 
 ## 5. 費用計測と記録
 
-OpenAI Usageの受入開始前後の差分だけを使う。金額・token数は記録してよいが、本文、出力、request ID、secretは記録しない。
+OpenAI Usageの受入開始前後の差分だけを使う。金額・token数は記録してよいが、本文、出力、request ID、secretは記録しない。30,000文字や5テーマをliveで追加実行せず、限定live 2テーマの実測usageとresponse usage/token数からシナリオ計算する。
 
+- [ ] 最終レスポンス後、Usage反映まで待ち、受入専用project／key、対象model、実行時間帯で絞る。他trafficが混在した場合は差分を今回の費用と断定しない。
 - [ ] 検出1回のinput token、output token、費用増分を記録する。
 - [ ] Trace 2回のinput token合計、output token合計、費用増分を記録する。
+- [ ] 利用可能なresponse usageのinput/output token合計とUsage画面の増分を照合する。
 - [ ] 実provider call数を、検出・Trace・自動retryに分けて記録する。
-- [ ] 総額を `検出費用 + Trace 2回費用` で確認する。
+- [ ] 実測総額を `検出通常費用 + 検出retry費用 + Trace通常費用 + Trace retry費用` で確認し、retry分を除外しない。
 - [ ] 1テーマあたり概算を `Trace 2回費用 / 2` で算出する（検出費用は別記）。
-- [ ] 5テーマ通常換算を `検出費用 + (Trace 2回費用 / 2) × 5` で算出し、$0.10未満か確認する。
-- [ ] retryがあった場合は通常換算と分け、実測総額と最悪系概算が概ね$0.20以内か確認する。
+- [ ] 30,000文字の検出費用はlive追加実行せず、30,000文字相当の推定input token上限、検出出力上限2,500 token、モデル単価から上限推定として計算する。2テーマ実測と混同しない。
+- [ ] 下表の1／3／5テーマ通常系とretry系を明示的に計算する。5テーマ通常系が$0.10未満、retry込み上限が概ね$0.20以内か確認する。
 - [ ] `docs/submission/verification.md`には日時、Worker version／commit、3処理のHTTP結果と時間、token差分、総額、1テーマ概算、5テーマ換算、安全確認だけを追記する。
 
 記録表:
@@ -123,6 +131,17 @@ OpenAI Usageの受入開始前後の差分だけを使う。金額・token数は
 | Trace 2テーマ |  |  |  |  |
 | 自動retry（発生時のみ） |  |  |  |  |
 | 合計 |  |  |  |  |
+
+シナリオ計算表（追加live呼び出しは禁止）:
+
+| シナリオ | 計算式 | 推定provider call数 | 推定費用 | 判定 |
+| --- | --- | ---: | ---: | --- |
+| 1テーマ通常 | `30k検出上限推定 + Trace平均 × 1` | 2 |  |  |
+| 3テーマ通常 | `30k検出上限推定 + Trace平均 × 3` | 4 |  |  |
+| 5テーマ通常 | `30k検出上限推定 + Trace平均 × 5` | 6 |  | `< $0.10` |
+| retry系上限 | `5テーマ通常 + 検出retry上限 + Trace retry上限 × 5` | 最大12 |  | `概ね <= $0.20` |
+
+`Trace平均`は限定live 2テーマのresponse usage/token数と費用の平均を使う。`検出retry上限`と`Trace retry上限`は、各処理がproviderを最大2回呼ぶ実装上限に基づく。実際にretryを起こすためのlive再実行はしない。
 
 ## 6. 完了判定
 
