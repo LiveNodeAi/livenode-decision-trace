@@ -1,7 +1,7 @@
 export type RuntimeEnv = {
   OPENAI_API_KEY: string;
   OPENAI_MODEL: string;
-  TOPIC_DETECTION_MODEL: string;
+  OPENAI_TOPIC_MODEL: string;
   DECISION_TRACE_RATE_LIMITER: {
     limit(input: { key: string }): Promise<{ success: boolean }>;
   };

@@ -21,7 +21,7 @@ describe("POST /api/topics/detect", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     limiter.limit.mockResolvedValue({ success: true });
-    getRuntimeEnv.mockResolvedValue({ OPENAI_API_KEY: "secret", TOPIC_DETECTION_MODEL: "gpt-5.4-nano", TOPIC_DETECTION_RATE_LIMITER: limiter });
+    getRuntimeEnv.mockResolvedValue({ OPENAI_API_KEY: "secret", OPENAI_TOPIC_MODEL: "gpt-5.4-nano", TOPIC_DETECTION_RATE_LIMITER: limiter });
   });
 
   it.each([

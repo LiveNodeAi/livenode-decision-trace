@@ -58,7 +58,7 @@ export async function POST(request: Request): Promise<Response> {
     const rateLimit = await env.TOPIC_DETECTION_RATE_LIMITER.limit({ key: `topics:detect:${ip}` });
     if (!rateLimit.success) return errorResponse("RATE_LIMITED", 429, true);
     const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
-    return Response.json(await detectTopics({ client: responsesClient(openai), transcript: validation.transcript, model: env.TOPIC_DETECTION_MODEL }));
+    return Response.json(await detectTopics({ client: responsesClient(openai), transcript: validation.transcript, model: env.OPENAI_TOPIC_MODEL }));
   } catch (error) {
     if (error instanceof AnalysisError) {
       if (error.code === "PROVIDER_TIMEOUT") return errorResponse("PROVIDER_TIMEOUT", 504, true);
