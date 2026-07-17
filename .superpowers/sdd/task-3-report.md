@@ -23,3 +23,4 @@ Verification:
 - canonical Traceの根拠照合先を、編集タイトルや限定前後文脈を除いた検証済み`range.excerpt`群だけに限定した。NFKC＋空白collapseは既存サニタイズを再利用。
 - `editedTitle`、`before`、`verified_excerpt`、`after`をすべてXMLエスケープし、閉じタグや偽instructionsをデータ境界内に保持した。
 - タイトルのみ／beforeのみ／afterのみのevidence拒否、NFKC＋空白collapse一致、全フィールドXML注入の回帰テストを追加。
+- fix後の最終検証: 対象・関連テスト35件PASS、全141件PASS、build PASS、diff-check PASS。
