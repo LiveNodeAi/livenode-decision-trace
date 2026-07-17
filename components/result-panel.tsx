@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import type { DecisionTrace } from "@/lib/decision-trace-schema";
 import { toDecisionTraceMarkdown, toKxNoteMarkdown } from "@/lib/markdown";
@@ -36,10 +36,11 @@ function GroundedList({ items, language }: { items: GroundedItem[]; language: De
 type ResultPanelProps = {
   trace: DecisionTrace;
   highImpact: boolean;
-  onReset: () => void;
+  onReset?: () => void;
 };
 
 export function ResultPanel({ trace, highImpact, onReset }: ResultPanelProps) {
+  const resultTitleId = `result-${useId().replaceAll(":", "")}`;
   const [copyNotice, setCopyNotice] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const ja = trace.language === "ja";
   const labels = ja
@@ -65,9 +66,9 @@ export function ResultPanel({ trace, highImpact, onReset }: ResultPanelProps) {
   }
 
   return (
-    <section className="result-panel" aria-labelledby="result-title">
+    <section className="result-panel" aria-labelledby={resultTitleId}>
       <header className="result-summary">
-        <div><p className="section-label">Resolved signal</p><h2 id="result-title">{ja ? "Decision Traceの結果" : "Decision Trace result"}</h2></div>
+        <div><p className="section-label">Resolved signal</p><h2 id={resultTitleId}>{ja ? "Decision Traceの結果" : "Decision Trace result"}</h2></div>
         <div className="recommendation"><p><strong>{trace.recommendation.option}</strong></p>
         <p>{ja ? "確信度" : "Confidence"}: {confidence[trace.language][trace.recommendation.confidence]}</p></div>
       </header>
@@ -128,7 +129,7 @@ export function ResultPanel({ trace, highImpact, onReset }: ResultPanelProps) {
         <button type="button" onClick={async () => await copy(toKxNoteMarkdown(trace, { highImpact }), "KX Note")}>
           {ja ? "KX Noteをコピー" : "Copy KX Note"}
         </button>
-        <button type="button" onClick={onReset}>{ja ? "最初からやり直す" : "Start over"}</button>
+        {onReset ? <button type="button" onClick={onReset}>{ja ? "最初からやり直す" : "Start over"}</button> : null}
       </div>
       {copyNotice ? (
         <p role={copyNotice.kind === "success" ? "status" : "alert"}>{copyNotice.message}</p>

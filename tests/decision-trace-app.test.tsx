@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -52,6 +52,86 @@ describe("DecisionTraceApp", () => {
       configurable: true,
       value: { writeText },
     });
+  });
+
+  it("rejects a 30,001-character transcript without calling fetch", async () => {
+    render(<DecisionTraceApp />);
+    await userEvent.click(screen.getByRole("button", { name: "文字起こしモード" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "文字起こし" }), { target: { value: "あ".repeat(30_001) } });
+    await userEvent.click(screen.getByRole("button", { name: "テーマを検出" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("30,000文字以内");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("reviews topics, generates two at a time, retries only failures, preserves successes, and downloads ZIP", async () => {
+    const transcript = `${"会議の背景です。".repeat(20)}議題Aを決めます。議題Bを決めます。議題Cを決めます。議題Dを決めます。`;
+    const topics = ["議題A", "議題B", "議題C", "議題D"].map((title, index) => {
+      const excerpt = `${title}を決めます。`;
+      const start = transcript.indexOf(excerpt);
+      return {
+        id: `topic-${index + 1}`,
+        title,
+        summary: `${title}の判断`,
+        ranges: [{ start, end: start + excerpt.length, excerpt }],
+      };
+    });
+    let resolveFirst!: (value: Response) => void;
+    let resolveSecond!: (value: Response) => void;
+    const first = new Promise<Response>((resolve) => { resolveFirst = resolve; });
+    const second = new Promise<Response>((resolve) => { resolveSecond = resolve; });
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.endsWith("/api/topics/detect")) {
+        return Promise.resolve(response(200, { transcriptHash: "a".repeat(64), topics }));
+      }
+      const analyzeCalls = fetchMock.mock.calls.filter(([candidate]) => String(candidate).endsWith("/api/topics/analyze")).length;
+      if (analyzeCalls === 1) return first;
+      if (analyzeCalls === 2) return second;
+      if (analyzeCalls === 3) return Promise.resolve(response(200, {
+        topicId: "topic-3", attemptId: "attempt-3", sourceRanges: topics[2].ranges, trace, highImpact: false,
+      }));
+      return Promise.resolve(response(200, {
+        topicId: "topic-2", attemptId: "attempt-retry", sourceRanges: topics[1].ranges, trace, highImpact: false,
+      }));
+    });
+    const createObjectURL = vi.fn(() => "blob:meeting-zip");
+    const revokeObjectURL = vi.fn();
+    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: createObjectURL });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: revokeObjectURL });
+
+    render(<DecisionTraceApp />);
+    await userEvent.click(screen.getByRole("button", { name: "文字起こしモード" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "文字起こし" }), transcript);
+    await userEvent.click(screen.getByRole("button", { name: "テーマを検出" }));
+
+    expect(await screen.findAllByTestId("topic-review-item")).toHaveLength(4);
+    await userEvent.click(screen.getByRole("checkbox", { name: /議題Dを生成対象にする/ }));
+    const titleB = screen.getByRole("textbox", { name: "議題Bのタイトル" });
+    await userEvent.clear(titleB);
+    await userEvent.type(titleB, "編集した議題B");
+    await userEvent.click(screen.getByRole("button", { name: "選択した3件を生成" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("0/3生成中");
+    expect(screen.getByRole("button", { name: "単一メモモード" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "文字起こしモード" })).toBeDisabled();
+    expect(fetchMock.mock.calls.filter(([candidate]) => String(candidate).endsWith("/api/topics/analyze"))).toHaveLength(2);
+    resolveFirst(response(200, {
+      topicId: "topic-1", attemptId: "attempt-1", sourceRanges: topics[0].ranges, trace, highImpact: false,
+    }));
+    resolveSecond(response(504, { error: "PROVIDER_TIMEOUT", retryable: true }));
+
+    expect(await screen.findByText("編集した議題Bの生成に失敗しました")).toBeInTheDocument();
+    expect(await screen.findAllByTestId("multi-trace-success")).toHaveLength(2);
+    expect(screen.getByText("議題A")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "編集した議題Bを再試行" }));
+    expect(await screen.findAllByTestId("multi-trace-success")).toHaveLength(3);
+    expect(fetchMock.mock.calls.filter(([candidate]) => String(candidate).endsWith("/api/topics/analyze"))).toHaveLength(4);
+    const ids = Array.from(document.querySelectorAll("[id]"), (element) => element.id);
+    expect(new Set(ids).size).toBe(ids.length);
+
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    await userEvent.click(screen.getByRole("button", { name: "Markdown ZIPをダウンロード" }));
+    await waitFor(() => expect(createObjectURL).toHaveBeenCalledOnce());
   });
 
   it("fills the memo with the public-policy sample", async () => {

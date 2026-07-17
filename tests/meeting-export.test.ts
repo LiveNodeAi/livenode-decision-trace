@@ -106,6 +106,23 @@ describe("meeting export", () => {
     expect(await zip.file("2026-07-17_定例会議/00-meeting-summary.md")!.async("string")).toContain("広報計画");
   });
 
+  it("creates an all-success ZIP with both Markdown files for every topic", async () => {
+    const JSZip = (await import("jszip")).default;
+    const allSuccess: MeetingExportInput = {
+      ...input,
+      topics: [
+        input.topics[0],
+        { status: "success", topic: topic("topic-2", "広報計画"), editedTitle: "広報計画", trace },
+      ],
+    };
+    const zip = await JSZip.loadAsync(await (await createMeetingZip(allSuccess)).arrayBuffer());
+    const names = Object.keys(zip.files).filter((name) => !zip.files[name]!.dir);
+    expect(names).toContain("2026-07-17_定例会議/01-受付方式/Decision-Trace.md");
+    expect(names).toContain("2026-07-17_定例会議/01-受付方式/KX-Note.md");
+    expect(names).toContain("2026-07-17_定例会議/02-広報計画/Decision-Trace.md");
+    expect(names).toContain("2026-07-17_定例会議/02-広報計画/KX-Note.md");
+  });
+
   it("refuses to create a ZIP when every topic failed", async () => {
     const failed: MeetingExportInput = {
       ...input,
