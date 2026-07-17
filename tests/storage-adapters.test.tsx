@@ -4,15 +4,18 @@ import { describe, expect, it } from "vitest";
 import { StorageAdapters } from "@/components/storage-adapters";
 
 describe("StorageAdapters", () => {
-  it("describes future Skill storage adapters without presenting fake actions", () => {
+  it("distinguishes the working Web and local KX layers from future Skill adapters", () => {
     render(<StorageAdapters />);
 
-    expect(screen.getByRole("heading", { name: "将来の保存先アダプター" })).toBeInTheDocument();
-    expect(screen.getByText("Obsidian")).toBeInTheDocument();
-    expect(screen.getByText("Notion")).toBeInTheDocument();
-    expect(screen.getByText("AI-Brain")).toBeInTheDocument();
-    expect(screen.getByText(/Skill版で提供予定/)).toBeInTheDocument();
-    expect(screen.getByText(/現在は.*直接保存.*未実装/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Decision TraceからKXへ" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Web版.*取り込み層/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /ローカルKX.*精錬層/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /配布Skill.*将来の提供層/ })).toBeInTheDocument();
+    expect(screen.getByText(/Markdown ZIPだけが.*実際に動く保存操作/)).toBeInTheDocument();
+    expect(screen.getByText(/AI-Brain.*既に実運用/)).toBeInTheDocument();
+    expect(screen.getByText(/Web版から.*直接接続しません/)).toBeInTheDocument();
+    expect(screen.getByText(/Obsidian・Notion.*認証と権限/)).toBeInTheDocument();
+    expect(screen.getByText(/保存アダプターは未実装/)).toBeInTheDocument();
     expect(screen.queryAllByRole("button")).toHaveLength(0);
     expect(screen.queryAllByRole("link")).toHaveLength(0);
   });
