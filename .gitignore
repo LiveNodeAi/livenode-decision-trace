@@ -11,4 +11,5 @@ node_modules/
 playwright-report/
 test-results/
 coverage/
+*.tsbuildinfo
 docs/submission/demo-video-ja.webm
