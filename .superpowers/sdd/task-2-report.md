@@ -49,3 +49,10 @@
 ## Concerns
 
 なし。新しいstateや永続化は追加していない。
+
+## Minor Review Follow-up
+
+- ステッパーの8% cyan背景を`color-mix(in srgb, var(--cyan) 8%, transparent)`へ変更
+- 完了工程の50% cyan枠を`color-mix(in srgb, var(--cyan) 50%, transparent)`へ変更
+- 完了番号の文字色を直値から既存`var(--space)`へ変更
+- 新規ステッパーCSSは既存カラー変数だけで構成
