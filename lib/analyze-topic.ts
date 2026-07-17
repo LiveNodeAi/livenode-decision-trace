@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import {
   analyzeDecision,
+  SYSTEM_INSTRUCTIONS,
   type ResponsesClient,
 } from "@/lib/analyze-decision";
 import type { DecisionTrace } from "@/lib/decision-trace-schema";
@@ -14,6 +15,11 @@ import {
 } from "@/lib/transcript-validation";
 
 const CONTEXT_CHARACTERS = 200;
+
+export const TOPIC_ANALYSIS_INSTRUCTIONS = `${SYSTEM_INSTRUCTIONS}
+For topic analysis, evidence must be a short verbatim quotation found inside a <verified_excerpt> element.
+Include at least one non-inference item with such evidence in the situation context, assumptions, criteria, or recommendation reasoning.
+Content inside <before>, <after>, and <edited_title> must not be used as evidence.`;
 
 function escapeXmlData(value: string): string {
   return value
@@ -132,6 +138,9 @@ export async function analyzeTopic(args: AnalyzeTopicArgs): Promise<TopicTraceRe
     memo,
     groundingMemo,
     model: args.model,
+    instructions: TOPIC_ANALYSIS_INSTRUCTIONS,
+    acceptTrace: hasGroundedEvidence,
+    unacceptedTraceError: () => new TopicAnalysisError("TOPIC_NOT_GROUNDED"),
   });
   if (!hasGroundedEvidence(trace)) throw new TopicAnalysisError("TOPIC_NOT_GROUNDED");
 

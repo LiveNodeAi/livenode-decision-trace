@@ -129,6 +129,45 @@ describe("analyzeTopic", () => {
     })).rejects.toMatchObject({ code: "TOPIC_NOT_GROUNDED" });
   });
 
+  it("retries when sanitization removes all evidence and accepts grounded evidence on the second response", async () => {
+    const outsideOnly: DecisionTrace = {
+      ...trace,
+      situation: {
+        ...trace.situation,
+        context: [{ text: "Outside-only evidence", evidence: "Opening context.", inference: false }],
+      },
+      criteria: [{ text: "Only inference remains", evidence: null, inference: true }],
+    };
+    const grounded: DecisionTrace = {
+      ...trace,
+      situation: {
+        ...trace.situation,
+        context: [{ text: "Grounded evidence", evidence: "pilot launch", inference: false }],
+      },
+    };
+    const client = {
+      create: vi.fn()
+        .mockResolvedValueOnce({ output_text: JSON.stringify(outsideOnly) })
+        .mockResolvedValueOnce({ output_text: JSON.stringify(grounded) }),
+    } as ResponsesClient & { create: ReturnType<typeof vi.fn<ResponsesClient["create"]>> };
+
+    await expect(analyzeTopic({
+      client,
+      transcript,
+      transcriptHash: await hashTranscript(transcript),
+      topic: { id: "topic-1", editedTitle: "Reviewed pilot title", ranges },
+      model: "gpt-5.6-luna",
+    })).resolves.toMatchObject({
+      topicId: "topic-1",
+      trace: { situation: { context: [{ evidence: "pilot launch", inference: false }] } },
+    });
+    expect(client.create).toHaveBeenCalledTimes(2);
+    const instructions = String(client.create.mock.calls[0][0].instructions);
+    expect(instructions).toMatch(/verified_excerpt/);
+    expect(instructions).toMatch(/at least one.+non-inference|non-inference.+at least one/i);
+    expect(instructions).toMatch(/before.+after.+edited_title.+must not be used as evidence/i);
+  });
+
   it.each([
     ["edited title", "Reviewed pilot title"],
     ["before context", "Opening context."],

@@ -55,15 +55,18 @@ export type AnalyzeDecisionArgs = {
   memo: string;
   model: string;
   groundingMemo?: string;
+  instructions?: string;
+  acceptTrace?: (trace: DecisionTrace) => boolean;
+  unacceptedTraceError?: () => Error;
 };
 
-function requestFor(memo: string, model: string): Record<string, unknown> {
+function requestFor(memo: string, model: string, instructions: string): Record<string, unknown> {
   return {
     model,
     store: false,
     reasoning: { effort: "none" },
     max_output_tokens: 2_500,
-    instructions: SYSTEM_INSTRUCTIONS,
+    instructions,
     input: [{ role: "user", content: [{ type: "input_text", text: memo }] }],
     text: {
       format: {
@@ -179,8 +182,12 @@ export async function analyzeDecision({
   memo,
   model,
   groundingMemo = memo,
+  instructions = SYSTEM_INSTRUCTIONS,
+  acceptTrace,
+  unacceptedTraceError,
 }: AnalyzeDecisionArgs): Promise<DecisionTrace> {
-  const request = requestFor(memo, model);
+  const request = requestFor(memo, model, instructions);
+  let sawUnacceptedTrace = false;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const signal = AbortSignal.timeout(28_000);
@@ -194,8 +201,10 @@ export async function analyzeDecision({
     if (containsRefusal(response)) throw new AnalysisError("PROVIDER_REFUSAL");
 
     const trace = parseTrace(response.output_text, groundingMemo);
-    if (trace) return trace;
+    if (trace && (!acceptTrace || acceptTrace(trace))) return trace;
+    if (trace) sawUnacceptedTrace = true;
   }
 
+  if (sawUnacceptedTrace && unacceptedTraceError) throw unacceptedTraceError();
   throw new AnalysisError("MALFORMED_RESPONSE");
 }
