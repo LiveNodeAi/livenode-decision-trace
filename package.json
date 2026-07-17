@@ -22,6 +22,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "jszip": "^3.10.1",
     "next": "^16.2.10",
     "openai": "^6.47.0",
     "react": "^19.2.7",
