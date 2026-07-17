@@ -72,6 +72,16 @@ describe("detectTopics", () => {
       .rejects.toMatchObject({ code: "MALFORMED_RESPONSE" });
   });
 
+  it("rejects reuse of the same grounded range across distinct topics", async () => {
+    const client = clientWith({ topics: [
+      { id: "topic-1", title: "Pilot", summary: "Pilot first.", ranges: [{ excerpt }] },
+      { id: "topic-2", title: "Budget", summary: "Limit cost.", ranges: [{ excerpt }] },
+    ] });
+
+    await expect(detectTopics({ client, transcript, model: "gpt-5.4-nano" }))
+      .rejects.toMatchObject({ code: "MALFORMED_RESPONSE" });
+  });
+
   it("uses the low-cost model with strict structured output and privacy controls", async () => {
     const client = clientWith(validTopics());
 

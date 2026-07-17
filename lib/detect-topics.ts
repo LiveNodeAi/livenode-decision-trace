@@ -76,6 +76,8 @@ function parseTopics(outputText: string, transcript: string) {
   });
   const topics = detectedTopicSchema.array().min(1).max(5).safeParse(withOffsets);
   if (!topics.success || !validateSourceRanges(transcript, topics.data).ok) return undefined;
+  const groundedRanges = topics.data.flatMap((topic) => topic.ranges.map(({ start, end }) => `${start}:${end}`));
+  if (new Set(groundedRanges).size !== groundedRanges.length) return undefined;
   return topics.data;
 }
 
