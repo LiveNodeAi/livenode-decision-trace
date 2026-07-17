@@ -19,6 +19,32 @@ function validTopics() {
 }
 
 describe("detectTopics", () => {
+  it("derives UTF-16 offsets on the server from verbatim excerpts", async () => {
+    const client = clientWith({
+      topics: [{
+        id: "topic-1",
+        title: "Pilot launch",
+        summary: "Choose a pilot first.",
+        ranges: [{ excerpt }],
+      }],
+    });
+
+    await expect(detectTopics({ client, transcript, model: "gpt-5.4-nano" }))
+      .resolves.toEqual({
+        transcriptHash: await hashTranscript(transcript),
+        topics: [{
+          id: "topic-1",
+          title: "Pilot launch",
+          summary: "Choose a pilot first.",
+          ranges: [{ start, end: start + excerpt.length, excerpt }],
+        }],
+      });
+
+    const providerSchema = client.create.mock.calls[0][0].text.format.schema;
+    const rangeProperties = providerSchema.properties.topics.items.properties.ranges.items.properties;
+    expect(Object.keys(rangeProperties)).toEqual(["excerpt"]);
+  });
+
   it("uses the low-cost model with strict structured output and privacy controls", async () => {
     const client = clientWith(validTopics());
 
@@ -39,8 +65,7 @@ describe("detectTopics", () => {
     ["zero topics", { topics: [] }],
     ["six topics", { topics: Array.from({ length: 6 }, (_, index) => ({ ...validTopics().topics[0], id: `topic-${index + 1}` })) }],
     ["duplicate IDs", { topics: [validTopics().topics[0], validTopics().topics[0]] }],
-    ["altered excerpt", { topics: [{ ...validTopics().topics[0], ranges: [{ start, end: start + excerpt.length, excerpt: `${excerpt}!` }] }] }],
-    ["out-of-bounds range", { topics: [{ ...validTopics().topics[0], ranges: [{ start, end: transcript.length + 1, excerpt }] }] }],
+    ["altered excerpt", { topics: [{ ...validTopics().topics[0], ranges: [{ excerpt: `${excerpt}!` }] }] }],
   ])("rejects %s after one malformed-response retry", async (_label, value) => {
     const client = clientWith(value);
 
