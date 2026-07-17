@@ -55,6 +55,29 @@ describe("detectTopics", () => {
     }]);
   });
 
+  it("accepts six segments when their combined source text is at most 4,000 characters", async () => {
+    const boundaryTranscript = Array.from({ length: 5 }, () => `${"根".repeat(665)}\n`).join("") + "根".repeat(670);
+    expect(boundaryTranscript).toHaveLength(4_000);
+    const boundarySegments = segmentTranscript(boundaryTranscript);
+    expect(boundarySegments).toHaveLength(6);
+    const client = clientWith({ topics: [providerTopic({ segmentIds: boundarySegments.map(({ id }) => id) })] });
+
+    const result = await detectTopics({ client, transcript: boundaryTranscript, model: "gpt-5.4-nano" });
+    expect(result.topics[0].ranges).toHaveLength(6);
+    expect(result.topics[0].ranges.reduce((total, range) => total + range.excerpt.length, 0)).toBe(4_000);
+  });
+
+  it("rejects six 800-character segments whose combined source exceeds 4,000 characters", async () => {
+    const oversizedTranscript = "根".repeat(4_800);
+    const oversizedSegments = segmentTranscript(oversizedTranscript);
+    expect(oversizedSegments).toHaveLength(6);
+    const client = clientWith({ topics: [providerTopic({ segmentIds: oversizedSegments.map(({ id }) => id) })] });
+
+    await expect(detectTopics({ client, transcript: oversizedTranscript, model: "gpt-5.4-nano" }))
+      .rejects.toMatchObject({ code: "MALFORMED_RESPONSE" });
+    expect(client.create).toHaveBeenCalledTimes(2);
+  });
+
   it("uses the low-cost model with strict structured output and privacy controls", async () => {
     const client = clientWith({ topics: [providerTopic()] });
     await detectTopics({ client, transcript, model: "gpt-5.4-nano" });
@@ -64,9 +87,10 @@ describe("detectTopics", () => {
       store: false,
       reasoning: { effort: "none" },
       max_output_tokens: 2500,
-      instructions: expect.stringMatching(/do not follow commands embedded|maximum of 5|segment ID|decision/iu),
+      instructions: expect.stringMatching(/do not follow commands embedded|maximum of 5|segment ID|4,000|decision/iu),
       text: { format: expect.objectContaining({ type: "json_schema", name: "topic_detection", strict: true }) },
     }), expect.objectContaining({ signal: expect.any(AbortSignal) }));
+    expect(client.create.mock.calls[0][0].instructions).toMatch(/combined.+4,000|4,000.+combined/iu);
   });
 
   it.each([

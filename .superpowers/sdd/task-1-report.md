@@ -56,3 +56,10 @@
 ## Concerns
 
 なし。実providerの検証とdeployは指示どおり未実施。
+
+## Review Follow-up
+
+- provider instructionsへ、各topicが選ぶ1〜6区間の原文合計を4,000文字以下にする制約を明記
+- 6区間・合計4,000文字ちょうどが成功する境界テストを追加
+- 800文字相当の6区間・合計4,800文字が2試行後に`MALFORMED_RESPONSE`となるテストを追加
+- segment単体の最大800文字とsegmentIds 1〜6件の契約は維持
