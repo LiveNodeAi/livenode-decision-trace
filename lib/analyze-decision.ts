@@ -55,12 +55,15 @@ export type AnalyzeDecisionArgs = {
   memo: string;
   model: string;
   groundingMemo?: string;
-  instructions?: string;
+  additionalInstructions?: string;
   acceptTrace?: (trace: DecisionTrace) => boolean;
   unacceptedTraceError?: () => Error;
 };
 
-function requestFor(memo: string, model: string, instructions: string): Record<string, unknown> {
+function requestFor(memo: string, model: string, additionalInstructions?: string): Record<string, unknown> {
+  const instructions = additionalInstructions
+    ? `${SYSTEM_INSTRUCTIONS}\n${additionalInstructions}`
+    : SYSTEM_INSTRUCTIONS;
   return {
     model,
     store: false,
@@ -182,11 +185,11 @@ export async function analyzeDecision({
   memo,
   model,
   groundingMemo = memo,
-  instructions = SYSTEM_INSTRUCTIONS,
+  additionalInstructions,
   acceptTrace,
   unacceptedTraceError,
 }: AnalyzeDecisionArgs): Promise<DecisionTrace> {
-  const request = requestFor(memo, model, instructions);
+  const request = requestFor(memo, model, additionalInstructions);
   let sawUnacceptedTrace = false;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
