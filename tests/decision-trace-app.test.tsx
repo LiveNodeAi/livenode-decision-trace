@@ -63,6 +63,16 @@ describe("DecisionTraceApp", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("supports keyboard mode switching and exposes named non-autofill transcript fields", async () => {
+    render(<DecisionTraceApp />);
+    const transcriptMode = screen.getByRole("button", { name: "文字起こしモード" });
+    transcriptMode.focus();
+    await userEvent.keyboard("{Enter}");
+    const transcriptInput = screen.getByRole("textbox", { name: "文字起こし" });
+    expect(transcriptInput).toHaveAttribute("name", "transcript");
+    expect(transcriptInput).toHaveAttribute("autocomplete", "off");
+  });
+
   it("reviews topics, generates two at a time, retries only failures, preserves successes, and downloads ZIP", async () => {
     const transcript = `${"会議の背景です。".repeat(20)}議題Aを決めます。議題Bを決めます。議題Cを決めます。議題Dを決めます。`;
     const topics = ["議題A", "議題B", "議題C", "議題D"].map((title, index) => {
@@ -76,17 +86,17 @@ describe("DecisionTraceApp", () => {
       };
     });
     let resolveFirst!: (value: Response) => void;
-    let resolveSecond!: (value: Response) => void;
     const first = new Promise<Response>((resolve) => { resolveFirst = resolve; });
-    const second = new Promise<Response>((resolve) => { resolveSecond = resolve; });
-    fetchMock.mockImplementation((input) => {
+    fetchMock.mockImplementation((input, init) => {
       const url = String(input);
       if (url.endsWith("/api/topics/detect")) {
         return Promise.resolve(response(200, { transcriptHash: "a".repeat(64), topics }));
       }
       const analyzeCalls = fetchMock.mock.calls.filter(([candidate]) => String(candidate).endsWith("/api/topics/analyze")).length;
       if (analyzeCalls === 1) return first;
-      if (analyzeCalls === 2) return second;
+      if (analyzeCalls === 2) return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new DOMException("cancelled", "AbortError")));
+      });
       if (analyzeCalls === 3) return Promise.resolve(response(200, {
         topicId: "topic-3", attemptId: "attempt-3", sourceRanges: topics[2].ranges, trace, highImpact: false,
       }));
@@ -105,6 +115,7 @@ describe("DecisionTraceApp", () => {
     await userEvent.click(screen.getByRole("button", { name: "テーマを検出" }));
 
     expect(await screen.findAllByTestId("topic-review-item")).toHaveLength(4);
+    expect(screen.getByRole("heading", { name: "生成するテーマを確認" })).toHaveFocus();
     await userEvent.click(screen.getByRole("checkbox", { name: /議題Dを生成対象にする/ }));
     const titleB = screen.getByRole("textbox", { name: "議題Bのタイトル" });
     await userEvent.clear(titleB);
@@ -118,11 +129,11 @@ describe("DecisionTraceApp", () => {
     resolveFirst(response(200, {
       topicId: "topic-1", attemptId: "attempt-1", sourceRanges: topics[0].ranges, trace, highImpact: false,
     }));
-    resolveSecond(response(504, { error: "PROVIDER_TIMEOUT", retryable: true }));
+    await userEvent.click(screen.getByRole("button", { name: "編集した議題Bを中止" }));
 
     expect(await screen.findByText("編集した議題Bの生成に失敗しました")).toBeInTheDocument();
     expect(await screen.findAllByTestId("multi-trace-success")).toHaveLength(2);
-    expect(screen.getByText("議題A")).toBeInTheDocument();
+    expect(screen.getAllByText("議題A").length).toBeGreaterThan(0);
     await userEvent.click(screen.getByRole("button", { name: "編集した議題Bを再試行" }));
     expect(await screen.findAllByTestId("multi-trace-success")).toHaveLength(3);
     expect(fetchMock.mock.calls.filter(([candidate]) => String(candidate).endsWith("/api/topics/analyze"))).toHaveLength(4);
@@ -133,12 +144,38 @@ describe("DecisionTraceApp", () => {
     expect(screen.getByRole("heading", { name: /配布Skill.*将来の提供層/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Obsidian|Notion|AI-Brain/ })).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Markdown ZIPをダウンロード" })).toHaveLength(1);
+    expect(screen.getByRole("heading", { name: "複数テーマのDecision Trace" })).toHaveFocus();
+    const map = screen.getByRole("region", { name: "会議全体の判断マップ" });
+    expect(within(map).getAllByText("2地域実証")).toHaveLength(3);
+    expect(within(map).getAllByText("苦情が一定数を超える")).toHaveLength(3);
+    expect(within(map).getAllByText("選定理由を公開する")).toHaveLength(3);
+    expect(screen.getByText("3/3件完了")).toHaveAttribute("aria-live", "polite");
     const ids = Array.from(document.querySelectorAll("[id]"), (element) => element.id);
     expect(new Set(ids).size).toBe(ids.length);
 
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     await userEvent.click(screen.getByRole("button", { name: "Markdown ZIPをダウンロード" }));
     await waitFor(() => expect(createObjectURL).toHaveBeenCalledOnce());
+    await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledOnce());
+  });
+
+  it("rejects an analyzed topic response whose id or source ranges do not match the request", async () => {
+    const transcript = `${"会議背景。".repeat(20)}議題Aを決めます。`;
+    const excerpt = "議題Aを決めます。";
+    const start = transcript.indexOf(excerpt);
+    const topic = { id: "topic-1", title: "議題A", summary: "判断", ranges: [{ start, end: start + excerpt.length, excerpt }] };
+    fetchMock
+      .mockResolvedValueOnce(response(200, { transcriptHash: "a".repeat(64), topics: [topic] }))
+      .mockResolvedValueOnce(response(200, {
+        topicId: "topic-2", attemptId: "wrong", sourceRanges: [{ ...topic.ranges[0], end: topic.ranges[0].end - 1 }], trace, highImpact: false,
+      }));
+    render(<DecisionTraceApp />);
+    await userEvent.click(screen.getByRole("button", { name: "文字起こしモード" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "文字起こし" }), transcript);
+    await userEvent.click(screen.getByRole("button", { name: "テーマを検出" }));
+    await userEvent.click(await screen.findByRole("button", { name: "選択した1件を生成" }));
+    expect((await screen.findAllByText("MALFORMED_RESPONSE")).length).toBeGreaterThan(0);
+    expect(screen.queryByTestId("multi-trace-success")).not.toBeInTheDocument();
   });
 
   it("fills the memo with the public-policy sample", async () => {

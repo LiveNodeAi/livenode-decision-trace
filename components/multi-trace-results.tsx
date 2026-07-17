@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { TopicTraceResult } from "@/lib/analyze-topic";
 import { createMeetingZip, type MeetingExportInput } from "@/lib/meeting-export";
@@ -24,6 +24,8 @@ type MultiTraceResultsProps = {
 };
 
 export function MultiTraceResults({ entries, onRetry, onReset }: MultiTraceResultsProps) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { headingRef.current?.focus(); }, [entries]);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const successful = entries.filter((entry) => entry.result);
 
@@ -42,7 +44,7 @@ export function MultiTraceResults({ entries, onRetry, onReset }: MultiTraceResul
       anchor.href = url;
       anchor.download = "decision-trace-meeting.zip";
       anchor.click();
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch {
       setDownloadError("ZIPを作成できませんでした。もう一度お試しください。");
     }
@@ -51,17 +53,32 @@ export function MultiTraceResults({ entries, onRetry, onReset }: MultiTraceResul
   return (
     <section className="multi-results" aria-labelledby="multi-results-title">
       <header className="multi-results-header">
-        <div><p className="section-label">Meeting decision map</p><h2 id="multi-results-title">複数テーマのDecision Trace</h2></div>
-        <p>{successful.length}/{entries.length}件完了</p>
+        <div><p className="section-label">Meeting decision map</p><h2 id="multi-results-title" ref={headingRef} tabIndex={-1}>複数テーマのDecision Trace</h2></div>
+        <p role="status" aria-live="polite">{successful.length}/{entries.length}件完了</p>
       </header>
+      <section className="meeting-decision-map" aria-label="会議全体の判断マップ">
+        <h3>会議全体の判断マップ</h3>
+        <ol>
+          {entries.map((entry) => (
+            <li key={entry.topic.id}>
+              <h4>{entry.editedTitle}</h4>
+              {entry.result ? <>
+                <p><strong>推奨:</strong> {entry.result.trace.recommendation.option}</p>
+                <p><strong>判断を変える条件:</strong> {entry.result.trace.recommendation.changeConditions.join("、") || "なし"}</p>
+                <p><strong>次のアクション:</strong> {[...entry.result.trace.nextActions].sort((a, b) => a.order - b.order).map(({ action }) => action).join("、")}</p>
+              </> : <p><strong>生成失敗:</strong> {entry.errorCode ?? "UNKNOWN"}</p>}
+            </li>
+          ))}
+        </ol>
+      </section>
       {entries.map((entry) => entry.result ? (
         <article key={entry.topic.id} data-testid="multi-trace-success" className="multi-result-item">
-          <h2>{entry.editedTitle}</h2>
+          <h3>{entry.editedTitle}</h3>
           <ResultPanel trace={entry.result.trace} highImpact={entry.result.highImpact} />
         </article>
       ) : (
         <article key={entry.topic.id} className="multi-result-error" role="alert">
-          <h2>{entry.editedTitle}</h2>
+          <h3>{entry.editedTitle}</h3>
           <p>{entry.editedTitle}の生成に失敗しました</p>
           <p>{entry.errorCode}</p>
           {entry.retryable ? <button type="button" onClick={() => onRetry(entry.topic.id)} disabled={entry.retrying}>{entry.editedTitle}を再試行</button> : null}

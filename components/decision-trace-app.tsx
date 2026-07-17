@@ -46,6 +46,16 @@ function errorCode(body: unknown, fallback: string): string {
   return typeof body === "object" && body !== null && "error" in body ? String(body.error) : fallback;
 }
 
+function sourceRangesMatch(value: unknown[], expected: DetectedTopic["ranges"]): boolean {
+  return value.length === expected.length && value.every((candidate, index) => {
+    if (typeof candidate !== "object" || candidate === null) return false;
+    const range = candidate as Record<string, unknown>;
+    return range.start === expected[index].start
+      && range.end === expected[index].end
+      && range.excerpt === expected[index].excerpt;
+  });
+}
+
 export function DecisionTraceApp() {
   const [mode, setMode] = useState<"single" | "transcript">("single");
   const [state, setState] = useState<AppState>({ status: "input", memo: "", error: null });
@@ -107,11 +117,12 @@ export function DecisionTraceApp() {
     setTranscriptState((current) => current.status === "review" ? { ...current, topics: update(current.topics) } : current);
   }
 
-  async function analyzeTopicRequest(topic: DetectedTopic, transcript: string, transcriptHash: string): Promise<TopicTraceResult> {
+  async function analyzeTopicRequest(topic: DetectedTopic, transcript: string, transcriptHash: string, signal?: AbortSignal): Promise<TopicTraceResult> {
     const response = await fetch("/api/topics/analyze", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ transcript, transcriptHash, topic: { id: topic.id, editedTitle: topic.title, ranges: topic.ranges } }),
+      signal,
     });
     const body: unknown = await response.json();
     if (!response.ok) {
@@ -126,6 +137,8 @@ export function DecisionTraceApp() {
       || typeof candidate.attemptId !== "string"
       || !Array.isArray(candidate.sourceRanges)
       || typeof candidate.highImpact !== "boolean"
+      || candidate.topicId !== topic.id
+      || !sourceRangesMatch(candidate.sourceRanges, topic.ranges)
     ) throw { code: "MALFORMED_RESPONSE", retryable: true };
     return {
       topicId: candidate.topicId,
@@ -141,8 +154,8 @@ export function DecisionTraceApp() {
     const selected = transcriptState.topics.filter((topic) => topic.selected && topic.editedTitle.trim()).map((topic) => ({ ...topic, title: topic.editedTitle.trim() }));
     const { transcript, transcriptHash, topics } = transcriptState;
     let completed = 0;
-    const controller = createTopicPool(async (topic) => {
-      try { return await analyzeTopicRequest(topic, transcript, transcriptHash); }
+    const controller = createTopicPool(async (topic, signal) => {
+      try { return await analyzeTopicRequest(topic, transcript, transcriptHash, signal); }
       finally {
         completed += 1;
         setTranscriptState((current) => current.status === "generating" ? { ...current, completed } : current);
@@ -175,6 +188,10 @@ export function DecisionTraceApp() {
     } : current);
   }
 
+  function cancelTopic(topicId: string) {
+    poolRef.current?.cancel(topicId);
+  }
+
   const resetTranscript = () => { poolRef.current = null; setTranscriptState({ status: "input", transcript: "", error: null }); };
   const busy = state.status === "generating" || transcriptState.status === "detecting" || transcriptState.status === "generating";
 
@@ -196,7 +213,15 @@ export function DecisionTraceApp() {
           onGenerate={generateSelected}
         />
       ) : transcriptState.status === "generating" ? (
-        <section className="input-panel" aria-labelledby="multi-progress-title"><h2 id="multi-progress-title">テーマ別Traceを生成</h2><p role="status">{transcriptState.completed}/{transcriptState.total}生成中</p><button type="button" disabled>生成中…</button></section>
+        <section className="input-panel" aria-labelledby="multi-progress-title">
+          <h2 id="multi-progress-title">テーマ別Traceを生成</h2>
+          <p role="status" aria-live="polite">{transcriptState.completed}/{transcriptState.total}生成中</p>
+          <ul className="generation-list">
+            {transcriptState.topics.filter((topic) => topic.selected).map((topic) => (
+              <li key={topic.id}><span>{topic.editedTitle}</span><button type="button" onClick={() => cancelTopic(topic.id)}>{topic.editedTitle}を中止</button></li>
+            ))}
+          </ul>
+        </section>
       ) : transcriptState.status === "result" ? (
         <MultiTraceResults entries={transcriptState.entries} onRetry={retry} onReset={resetTranscript} />
       ) : (

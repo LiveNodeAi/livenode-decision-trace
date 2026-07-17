@@ -87,6 +87,12 @@ textarea:hover { border-color: rgba(99,230,226,.5); }
 .multi-result-item { min-width: 0; margin-top: 24px; }
 .multi-result-item > h2 { color: var(--amber); overflow-wrap: anywhere; }
 .multi-result-item .result-panel { padding: clamp(18px, 3vw, 32px); }
+.generation-list, .meeting-decision-map ol { display: grid; gap: 10px; padding: 0; list-style: none; }
+.generation-list li { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 10px; overflow-wrap: anywhere; }
+.generation-list li > *, .generation-list button { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.meeting-decision-map { margin: 24px 0; padding: 20px; border: 1px solid var(--line); border-radius: 14px; }
+.meeting-decision-map li { padding: 14px; background: rgba(5,9,19,.42); border-radius: 10px; overflow-wrap: anywhere; }
+.meeting-decision-map h4 { color: var(--amber); margin: 0 0 8px; }
 .storage-adapters-wrap { margin-top: 32px; padding: 24px; border: 1px solid var(--line); border-radius: 14px; background: rgba(5,9,19,.48); }
 .storage-adapters-wrap h2 { margin: 0 0 8px; font: 500 clamp(1.4rem, 3vw, 2rem)/1.2 Georgia, serif; }
 .storage-adapters-wrap ol { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; padding: 0; list-style: none; }

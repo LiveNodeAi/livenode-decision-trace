@@ -14,6 +14,8 @@ export function TranscriptInputPanel({ transcript, detecting, error, onChange, o
       <label className="field-label" htmlFor="meeting-transcript">文字起こし</label>
       <textarea
         id="meeting-transcript"
+        name="transcript"
+        autoComplete="off"
         value={transcript}
         onChange={(event) => onChange(event.target.value)}
         disabled={detecting}

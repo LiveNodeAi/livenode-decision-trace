@@ -1,4 +1,5 @@
 import type { DetectedTopic } from "@/lib/transcript-contract";
+import { useEffect, useRef } from "react";
 
 export type ReviewedTopic = DetectedTopic & { selected: boolean; editedTitle: string };
 
@@ -10,10 +11,12 @@ type TopicReviewPanelProps = {
 };
 
 export function TopicReviewPanel({ topics, onToggle, onTitleChange, onGenerate }: TopicReviewPanelProps) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { headingRef.current?.focus(); }, []);
   const selected = topics.filter((topic) => topic.selected && topic.editedTitle.trim().length > 0);
   return (
     <section className="input-panel topic-review" aria-labelledby="topic-review-title">
-      <h2 id="topic-review-title">生成するテーマを確認</h2>
+      <h2 id="topic-review-title" ref={headingRef} tabIndex={-1}>生成するテーマを確認</h2>
       <p>最大5件。不要なテーマは外し、タイトルを必要に応じて修正できます。</p>
       <div className="topic-review-list">
         {topics.map((topic) => (
@@ -31,6 +34,8 @@ export function TopicReviewPanel({ topics, onToggle, onTitleChange, onGenerate }
             <input
               id={`${topic.id}-title`}
               type="text"
+              name={`${topic.id}-title`}
+              autoComplete="off"
               value={topic.editedTitle}
               onChange={(event) => onTitleChange(topic.id, event.target.value)}
               disabled={!topic.selected}

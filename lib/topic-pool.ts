@@ -11,12 +11,13 @@ export type SettledTopic<T> =
   | { topic: DetectedTopic; state: "complete"; value: T }
   | { topic: DetectedTopic; state: "retryable-error" | "fatal-error"; error: unknown };
 
-type TopicWorker<T> = (topic: DetectedTopic) => Promise<T>;
+type TopicWorker<T> = (topic: DetectedTopic, signal?: AbortSignal) => Promise<T>;
 export type TopicPoolConcurrency = 1 | 2;
 
 export type TopicPoolController<T> = {
   run(items: DetectedTopic[]): Promise<SettledTopic<T>[]>;
   retry(topic: DetectedTopic): Promise<SettledTopic<T>>;
+  cancel(topicId: string): boolean;
 };
 
 function isRetryable(error: unknown): boolean {
@@ -42,12 +43,18 @@ function runOnce<T>(
   topic: DetectedTopic,
   worker: TopicWorker<T>,
   inFlight: Map<string, Promise<SettledTopic<T>>>,
+  controllers: Map<string, AbortController>,
+  withSlot: <R>(operation: () => Promise<R>) => Promise<R>,
 ): Promise<SettledTopic<T>> {
   const existing = inFlight.get(topic.id);
   if (existing) return existing;
 
-  const promise = Promise.resolve()
-    .then(() => worker(topic))
+  const controller = new AbortController();
+  controllers.set(topic.id, controller);
+  const promise = withSlot(async () => {
+    if (controller.signal.aborted) throw new DOMException("cancelled", "AbortError");
+    return worker(topic, controller.signal);
+  })
     .then<SettledTopic<T>>((value) => ({ topic, state: "complete", value }))
     .catch((error: unknown): SettledTopic<T> => ({
       topic,
@@ -56,6 +63,7 @@ function runOnce<T>(
     }))
     .finally(() => {
       if (inFlight.get(topic.id) === promise) inFlight.delete(topic.id);
+      if (controllers.get(topic.id) === controller) controllers.delete(topic.id);
     });
   inFlight.set(topic.id, promise);
   return promise;
@@ -67,6 +75,18 @@ export function createTopicPool<T>(
 ): TopicPoolController<T> {
   const concurrency = normalizeConcurrency(options.concurrency ?? 2);
   const inFlight = new Map<string, Promise<SettledTopic<T>>>();
+  const controllers = new Map<string, AbortController>();
+  let active = 0;
+  const waiting: Array<() => void> = [];
+  async function withSlot<R>(operation: () => Promise<R>): Promise<R> {
+    if (active >= concurrency) await new Promise<void>((resolve) => waiting.push(resolve));
+    active += 1;
+    try { return await operation(); }
+    finally {
+      active -= 1;
+      waiting.shift()?.();
+    }
+  }
 
   async function run(items: DetectedTopic[]): Promise<SettledTopic<T>[]> {
     const results = new Array<SettledTopic<T>>(items.length);
@@ -75,7 +95,7 @@ export function createTopicPool<T>(
       while (nextIndex < items.length) {
         const index = nextIndex;
         nextIndex += 1;
-        results[index] = await runOnce(items[index], worker, inFlight);
+        results[index] = await runOnce(items[index], worker, inFlight, controllers, withSlot);
       }
     }
     await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => consume()));
@@ -84,7 +104,13 @@ export function createTopicPool<T>(
 
   return {
     run,
-    retry: (topic) => runOnce(topic, worker, inFlight),
+    retry: (topic) => runOnce(topic, worker, inFlight, controllers, withSlot),
+    cancel: (topicId) => {
+      const controller = controllers.get(topicId);
+      if (!controller || controller.signal.aborted) return false;
+      controller.abort();
+      return true;
+    },
   };
 }
 

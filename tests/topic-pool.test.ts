@@ -61,6 +61,43 @@ describe("runTopicPool", () => {
     expect(worker.mock.calls.map(([item]) => item.id)).toEqual(["topic-1", "topic-2", "topic-3", "topic-2"]);
   });
 
+  it("keeps multiple rapid retries within the controller's two-worker limit", async () => {
+    let active = 0;
+    let maximum = 0;
+    const releases: Array<() => void> = [];
+    const controller = createTopicPool(async (item) => {
+      active += 1;
+      maximum = Math.max(maximum, active);
+      await new Promise<void>((resolve) => releases.push(resolve));
+      active -= 1;
+      return item.id;
+    });
+    const retries = [1, 2, 3, 4, 5].map((index) => controller.retry(topic(index)));
+    await vi.waitFor(() => expect(releases).toHaveLength(2));
+    releases.splice(0).forEach((release) => release());
+    await vi.waitFor(() => expect(releases).toHaveLength(2));
+    releases.splice(0).forEach((release) => release());
+    await vi.waitFor(() => expect(releases).toHaveLength(1));
+    releases.splice(0).forEach((release) => release());
+    await Promise.all(retries);
+    expect(maximum).toBe(2);
+  });
+
+  it("cancels one topic without aborting completed or other in-flight work", async () => {
+    const controller = createTopicPool(async (item, signal) => {
+      if (item.id === "topic-1") return item.id;
+      await new Promise<void>((resolve, reject) => {
+        signal?.addEventListener("abort", () => reject(new DOMException("cancelled", "AbortError")));
+        if (item.id === "topic-3") resolve();
+      });
+      return item.id;
+    });
+    const pending = controller.run([topic(1), topic(2), topic(3)]);
+    await vi.waitFor(() => expect(controller.cancel("topic-2")).toBe(true));
+    const results = await pending;
+    expect(results.map(({ state }) => state)).toEqual(["complete", "retryable-error", "complete"]);
+  });
+
   it("classifies cancellation as retryable without changing completed results", async () => {
     const worker = async (item: DetectedTopic) => {
       if (item.id === "topic-2") throw Object.assign(new Error("cancelled"), { name: "AbortError" });
