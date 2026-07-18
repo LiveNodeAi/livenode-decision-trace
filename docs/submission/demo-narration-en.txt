@@ -12,4 +12,4 @@ Grounded evidence stays separate from AI inference, so a polished answer cannot 
 
 The browser creates a Markdown ZIP with a meeting summary, actions, Decision Traces, and reusable KX Notes.
 
-Codex accelerated design, implementation, testing, and deployment. GPT-5.6 powers topic detection and structured analysis.
+Codex built the demo. GPT-5.6 detects and structures decisions.

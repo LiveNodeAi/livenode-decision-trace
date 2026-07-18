@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -56,13 +56,27 @@ function readScenes() {
   return scenes;
 }
 
-function verifyFinalMedia() {
-  const media = JSON.parse(capture("ffprobe", [
+function probeMedia(mediaPath) {
+  return JSON.parse(capture("ffprobe", [
     "-v", "error",
     "-show_entries", "format=duration:stream=codec_name,codec_type,width,height",
     "-of", "json",
-    finalVideoPath,
+    mediaPath,
   ]));
+}
+
+function probeDuration(mediaPath) {
+  const duration = Number(probeMedia(mediaPath).format?.duration);
+
+  if (!Number.isFinite(duration) || duration <= 0) {
+    throw new Error(`Could not determine a positive duration for ${mediaPath}.`);
+  }
+
+  return duration;
+}
+
+function verifyFinalMedia(rawVideoDuration) {
+  const media = probeMedia(finalVideoPath);
   const duration = Number(media.format?.duration);
   const videoStreams = media.streams.filter((stream) => stream.codec_type === "video");
   const audioStreams = media.streams.filter((stream) => stream.codec_type === "audio");
@@ -71,6 +85,9 @@ function verifyFinalMedia() {
 
   if (!Number.isFinite(duration) || duration < minimumDurationSeconds || duration > maximumDurationSeconds) {
     throw new Error(`Final video duration must be ${minimumDurationSeconds}-${maximumDurationSeconds}s; got ${duration}s.`);
+  }
+  if (Math.abs(duration - rawVideoDuration) > 0.05) {
+    throw new Error(`Final video duration must match the raw WebM within 0.05s; got ${duration}s vs ${rawVideoDuration}s.`);
   }
   if (videoStreams.length !== 1 || video?.codec_name !== "h264") {
     throw new Error("Final video must contain exactly one H.264 video stream.");
@@ -91,15 +108,24 @@ function main() {
   }
 
   const scenes = readScenes();
+  const rawVideoDuration = probeDuration(rawVideoPath);
   mkdirSync(audioDirectory, { recursive: true });
+  const renderDirectory = mkdtempSync(path.join(audioDirectory, "render-"));
   const wavPaths = scenes.map((scene, index) => {
     const baseName = `${String(index + 1).padStart(2, "0")}-${scene.id}`;
-    const aiffPath = path.join(audioDirectory, `${baseName}.aiff`);
-    const wavPath = path.join(audioDirectory, `${baseName}.wav`);
+    const aiffPath = path.join(renderDirectory, `${baseName}.aiff`);
+    const wavPath = path.join(renderDirectory, `${baseName}.wav`);
     const durationSeconds = String(scene.durationMs / 1000);
+    const narrationLimitSeconds = Math.min(scene.narrationMaxMs, scene.durationMs) / 1000;
 
     // Samantha is an English macOS synthetic voice. 145 WPM honors the public demo contract.
     run("say", ["-v", "Samantha", "-r", narrationRate, "-o", aiffPath, scene.narration]);
+    const narrationDuration = probeDuration(aiffPath);
+    if (narrationDuration > narrationLimitSeconds) {
+      throw new Error(
+        `Narration for ${scene.id} is ${narrationDuration.toFixed(2)}s, exceeding its ${narrationLimitSeconds.toFixed(2)}s budget.`,
+      );
+    }
     run("ffmpeg", [
       "-y", "-i", aiffPath,
       "-af", `apad=pad_dur=${durationSeconds}`,
@@ -109,9 +135,9 @@ function main() {
 
     return wavPath;
   });
-  const concatListPath = path.join(audioDirectory, "audio-concat.txt");
-  const combinedWavPath = path.join(audioDirectory, "demo-narration.wav");
-  const combinedAudioPath = path.join(audioDirectory, "demo-narration.m4a");
+  const concatListPath = path.join(renderDirectory, "audio-concat.txt");
+  const combinedWavPath = path.join(renderDirectory, "demo-narration.wav");
+  const combinedAudioPath = path.join(renderDirectory, "demo-narration.m4a");
   writeFileSync(concatListPath, wavPaths.map((wavPath) => `file '${wavPath.replaceAll("'", "'\\\\''")}'`).join("\n") + "\n");
 
   run("ffmpeg", [
@@ -121,17 +147,21 @@ function main() {
   ]);
   run("ffmpeg", [
     "-y", "-i", combinedWavPath,
+    "-af", `apad=pad_dur=${rawVideoDuration}`,
+    "-t", String(rawVideoDuration),
     "-c:a", "aac", "-b:a", "160k",
     combinedAudioPath,
   ]);
   run("ffmpeg", [
     "-y", "-i", rawVideoPath, "-i", combinedAudioPath,
+    "-map", "0:v:0", "-map", "1:a:0",
+    "-t", String(rawVideoDuration),
     "-c:v", "libx264", "-preset", "medium", "-crf", "20",
     "-c:a", "aac", "-b:a", "160k",
-    "-shortest", "-movflags", "+faststart",
+    "-movflags", "+faststart",
     finalVideoPath,
   ]);
-  verifyFinalMedia();
+  verifyFinalMedia(rawVideoDuration);
 }
 
 try {
