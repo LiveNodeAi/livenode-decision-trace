@@ -14,6 +14,8 @@
     "test:watch": "vitest",
     "capture:thumbnail": "node scripts/capture-thumbnail.mjs",
     "capture:demo": "node scripts/capture-demo.mjs",
+    "capture:demo:rehearsal": "DEMO_TARGET=mock node scripts/capture-demo.mjs",
+    "capture:demo:production": "DEMO_TARGET=production node scripts/capture-demo.mjs",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
