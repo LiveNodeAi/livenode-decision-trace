@@ -1,0 +1,11 @@
+{
+  "voice": {
+    "language": "en",
+    "type": "synthetic",
+    "maxWordsPerMinute": 150
+  },
+  "captions": {
+    "language": "en",
+    "delivery": "burned-in"
+  }
+}

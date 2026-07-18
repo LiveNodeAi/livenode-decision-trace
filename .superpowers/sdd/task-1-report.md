@@ -1,65 +1,37 @@
-# Task 1 Report: 原文位置付き区間とテーマ検出
+# Task 1 report — safe demo content and timing contract
 
-## Status
+## Delivered
 
-完了。AIに引用・offsetを生成させる方式を廃止し、サーバー生成の原文区間から`segmentIds`を選ばせ、公開APIの`SourceRange`へ決定論的に復元する方式へ変更した。API実呼び出しとdeployは実施していない。
+- Added a 1,672-character fictional Japanese transcript with exactly two explicit decision themes: the initial pilot format in an `実証地域`, and whether `LINE` is an optional communication entry point.
+- Added English and revised Japanese narration that describe the same eight-scene story, including Codex, GPT-5.6, and human review.
+- Added the eight-scene JSON timing contract totaling 88,000 ms.
+- Added a Vitest contract test for transcript size and required terms, narration references, scene duration range, unique IDs, and non-empty captions/narration.
+- Added `demo-output-contract.json`: synthetic English voice at a conservative maximum of 150 words per minute, with burned-in English captions.
+- Added per-scene `narrationMaxMs` and `operationMs` fields. Each pair sums to its scene duration; the 88,000 ms composition reserves 37,500 ms for recorded UI operation or silence.
+- Strengthened transcript safety checks: exactly two bracketed theme markers, only the four fictional role labels as speakers, and explicit forbidden patterns for URLs, email addresses, telephone numbers, organization markers, representative real-place markers, and common personal-name markers.
 
-## Implementation
+## TDD evidence
 
-- `segmentTranscript`を追加
-  - `segment-N`の安定ID
-  - UTF-16の`start`/`end`と`transcript.slice(start, end)`完全一致の`text`
-  - 改行・文末記号直後を優先し、最大800 code unitでfallback
-  - fallback時にサロゲートペアの途中を回避
-  - 空白・改行を保持し、全原文を欠落・重複なく連続して被覆
-- `resolveSegmentIds`を追加
-  - 未知ID・テーマ内重複IDを拒否
-  - 逆順IDを原文順へsort
-  - `start`/`end`/`excerpt`へ決定論的変換
-- provider契約を`segmentIds: string[1..6]`へ変更
-  - provider入力は`id`と原文`text`のみで、offset生成指示なし
-  - topic間でのsegment共有を拒否
-  - 復元後に既存`detectedTopicSchema`と`validateSourceRanges`を適用
-  - 既存の最大1回再試行、最大5テーマ、model/reasoning/token/privacy設定を維持
-
-## TDD Evidence
-
-1. 区間化テストとsegmentIds契約テストを先に追加
-2. `@/lib/transcript-segments`未作成によるREDを確認
-3. 最小実装後に対象23件をGREEN化
-4. buildで検出したMap key型エラーを修正し、TypeScript buildをGREEN化
-
-## Test Coverage
-
-- 6,595 UTF-16 code unit相当の改行・句点・絵文字・長文・反復入力
-- 全segmentのslice完全一致、最大800、連続被覆、空白保持
-- fallback境界のサロゲートペア保護
-- 同文反復を別segment IDとして識別
-- 逆順IDの原文順復元
-- 未知ID、テーマ内重複、topic間共有、7区間、6テーマを2試行後に拒否
-- provider schemaがsegmentIdsだけを要求し、入力にoffset/start/endを含めないこと
-- 公開`TopicDetection`形式と既存API error mappingの互換性
+1. Added `tests/demo-assets.test.ts` before the requested assets existed.
+2. Ran `npm test -- tests/demo-assets.test.ts`; it failed with the expected `ENOENT` for `docs/submission/demo-transcript-ja.txt`.
+3. Added the assets, then reran the same command successfully.
+4. Expanded the contract test for timing, transcript safety, and output metadata; it failed with the expected `ENOENT` for `docs/submission/demo-output-contract.json` before the new contract file was added.
 
 ## Verification
 
-- `npx vitest run tests/transcript-segments.test.ts tests/detect-topics.test.ts tests/api-topics-detect.test.ts`: 3 files / 23 tests passed
-- `npm test`: 17 files / 158 tests passed
-- `npm run build`: passed
+- `wc -m docs/submission/demo-transcript-ja.txt` returned `1672`.
+- `npm test -- tests/demo-assets.test.ts` passed: 1 test file, 1 test.
+- `git diff --check` returned no whitespace errors before commit.
+- Exact final command: `npm test -- tests/demo-assets.test.ts`
+- Exact final output summary: `Test Files  1 passed (1)` and `Tests  1 passed (1)`; exit code 0.
 
-## Files
+## Commit
 
-- `lib/transcript-segments.ts`
-- `lib/detect-topics.ts`
-- `tests/transcript-segments.test.ts`
-- `tests/detect-topics.test.ts`
+`97a8cb7 docs: add Build Week demo content`
 
-## Concerns
+Follow-up timing/safety/output-contract fixes are committed separately after this report update.
 
-なし。実providerの検証とdeployは指示どおり未実施。
+## Scope / concerns
 
-## Review Follow-up
-
-- provider instructionsへ、各topicが選ぶ1〜6区間の原文合計を4,000文字以下にする制約を明記
-- 6区間・合計4,000文字ちょうどが成功する境界テストを追加
-- 800文字相当の6区間・合計4,800文字が2試行後に`MALFORMED_RESPONSE`となるテストを追加
-- segment単体の最大800文字とsegmentIds 1〜6件の契約は維持
+- Only the Task 1 content files were committed.
+- No runtime application data is consumed by these demo assets.
