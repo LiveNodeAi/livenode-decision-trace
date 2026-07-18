@@ -3,6 +3,11 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { chromium } from "@playwright/test";
 
 import { buildDemoTopics, buildDemoTrace } from "./demo-fixtures.mjs";
+import {
+  assertWithinProductionCaptureDeadline,
+  remainingProductionCaptureDuration,
+  remainingSceneDuration,
+} from "./demo-capture-timing.mjs";
 
 const target = process.env.DEMO_TARGET ?? "mock";
 const baseURL = target === "production"
@@ -29,7 +34,24 @@ const context = await browser.newContext({
   recordVideo: { dir: "/tmp/livenode-demo", size: { width: 1440, height: 900 } },
 });
 const page = await context.newPage();
+const captureStartedAt = Date.now();
 page.setDefaultTimeout(15_000);
+
+async function withinProductionCaptureDeadline(action) {
+  if (target !== "production") return action();
+  const remainingMs = remainingProductionCaptureDuration(captureStartedAt);
+  let timeout;
+  try {
+    return await Promise.race([
+      action(),
+      new Promise((_, reject) => {
+        timeout = setTimeout(() => reject(new Error("Production capture exceeded 100 seconds")), remainingMs);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 if (target === "mock") {
   await page.route("**/api/topics/detect", async (route) => {
@@ -69,8 +91,10 @@ await page.evaluate(() => {
 async function play(id, action = async () => {}) {
   const entry = scene(id);
   await page.evaluate((caption) => { document.querySelector("#demo-caption").textContent = caption; }, entry.caption);
-  await action();
-  await page.waitForTimeout(entry.durationMs);
+  const sceneStartedAt = Date.now();
+  await withinProductionCaptureDeadline(action);
+  await withinProductionCaptureDeadline(() => page.waitForTimeout(remainingSceneDuration(entry.durationMs, sceneStartedAt)));
+  if (target === "production") assertWithinProductionCaptureDeadline(captureStartedAt);
 }
 
 await play("opening");
@@ -104,5 +128,6 @@ const video = page.video();
 if (!video) throw new Error("Playwright did not create a video");
 mkdirSync("docs/submission", { recursive: true });
 await context.close();
+if (target === "production") assertWithinProductionCaptureDeadline(captureStartedAt);
 await video.saveAs(outputPath);
 await browser.close();
