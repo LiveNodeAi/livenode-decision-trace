@@ -7,6 +7,7 @@ import {
   assertWithinProductionCaptureDeadline,
   remainingProductionCaptureDuration,
   remainingSceneDuration,
+  topicDetectionWaitTimeoutMs,
 } from "./demo-capture-timing.mjs";
 
 const target = process.env.DEMO_TARGET ?? "mock";
@@ -103,7 +104,7 @@ await play("paste", async () => {
 });
 await play("detect", async () => {
   await page.getByRole("button", { name: "テーマを検出" }).click();
-  await page.getByTestId("topic-review-item").first().waitFor();
+  await page.getByTestId("topic-review-item").first().waitFor({ timeout: topicDetectionWaitTimeoutMs() });
 });
 await play("review", async () => {
   await page.getByTestId("topic-review-item").first().scrollIntoViewIfNeeded();

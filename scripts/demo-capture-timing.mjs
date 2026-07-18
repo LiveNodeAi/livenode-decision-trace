@@ -1,4 +1,9 @@
 const PRODUCTION_CAPTURE_MAX_MS = 100_000;
+const TOPIC_DETECTION_WAIT_MS = 35_000;
+
+export function topicDetectionWaitTimeoutMs() {
+  return TOPIC_DETECTION_WAIT_MS;
+}
 
 export function remainingSceneDuration(durationMs, sceneStartedAt, now = Date.now()) {
   return Math.max(0, durationMs - (now - sceneStartedAt));
