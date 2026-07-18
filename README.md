@@ -22,7 +22,7 @@ This project was built during OpenAI Build Week as a collaboration between Takah
 
 Codex accelerated the implementation by turning those decisions into the Next.js interface, strict data contracts, grounded transcript segmentation, bounded concurrency and retry behavior, deterministic Markdown ZIP export, automated tests, accessibility checks, and Cloudflare deployment. Codex also helped find and repair failures observed in real use, including topic grounding and the all-failed flow advancing to ZIP too early. The dated commit history records the work completed during the submission period.
 
-GPT-5.6 is used at runtime through the OpenAI Responses API. It detects decision-bearing topics in untrusted transcript segments and produces structured per-topic analysis. Its output is not trusted directly: the server resolves segment IDs back to source ranges, validates the strict schema, verifies evidence against the supplied text, and exposes AI inference separately from grounded evidence.
+GPT-5.6 is used at runtime through the OpenAI Responses API to produce the structured Decision Trace for each selected topic and for focused memos. To reduce demo cost, `gpt-5.4-nano` first detects decision-bearing topics in untrusted transcript segments. Neither model's output is trusted directly: the server resolves segment IDs back to source ranges, validates strict schemas, verifies evidence against the supplied text, and exposes AI inference separately from grounded evidence.
 
 ### 日本語訳
 
@@ -30,7 +30,7 @@ GPT-5.6 is used at runtime through the OpenAI Responses API. It detects decision
 
 Codexは、それらの判断をNext.jsの画面、厳密なデータ契約、根拠位置を持つ文字起こし分割、同時実行数と再試行の制御、決定的なMarkdown ZIP出力、自動テスト、アクセシビリティ確認、Cloudflareへのデプロイへ変換しました。また、実利用で見つかったテーマ根拠の不一致や、全テーマ失敗時にZIPへ進んでしまう問題の切り分けと修正にも使いました。応募期間中の作業は日付付きのコミット履歴で確認できます。
 
-GPT-5.6はOpenAI Responses API経由で実行時に使用します。信頼できない文字起こし区間から判断を含むテーマを検出し、テーマ別の構造化分析を生成します。ただし、モデル出力をそのまま信用しません。サーバーが区間IDを原文位置へ戻し、厳密な形式を検証し、根拠が入力文に存在することを確認し、AI推論と入力根拠を分けて表示します。
+GPT-5.6はOpenAI Responses API経由で、選択された各テーマとアイデアメモの構造化Decision Traceを生成します。デモの費用を抑えるため、文字起こしから判断テーマを検出する前処理には`gpt-5.4-nano`を使用します。どちらのモデル出力もそのまま信用せず、サーバーが区間IDを原文位置へ戻し、厳密な形式を検証し、根拠が入力文に存在することを確認し、AI推論と入力根拠を分けて表示します。
 
 ## The problem
 
@@ -115,6 +115,7 @@ Set these variables in `.dev.vars` (the file is ignored by Git):
 ```dotenv
 OPENAI_API_KEY=your-project-api-key
 OPENAI_MODEL=gpt-5.6-luna
+OPENAI_TOPIC_MODEL=gpt-5.4-nano
 ```
 
 Run the Next.js development server:
@@ -147,6 +148,6 @@ npx wrangler secret put OPENAI_API_KEY
 npm run deploy
 ```
 
-`OPENAI_MODEL` is a non-secret Worker variable configured in `wrangler.jsonc`. The Build Week configuration uses `gpt-5.6-luna` with reasoning effort `none`; the strict schema and server-side validation remain the output boundary. Never commit `.dev.vars`, credentials, submitted memo content, or model responses.
+`OPENAI_MODEL` and `OPENAI_TOPIC_MODEL` are non-secret Worker variables configured in `wrangler.jsonc`. The Build Week configuration uses `gpt-5.6-luna` with reasoning effort `none` for Decision Trace generation and `gpt-5.4-nano` for topic detection; strict schemas and server-side validation remain the output boundary. Never commit `.dev.vars`, credentials, submitted memo content, or model responses.
 
 Next.js owns the tracked `next-env.d.ts`. `next dev` (including Playwright) points it at `.next/dev/types`, while `next build` restores the canonical `.next/types` import. Run the production build after Playwright before the final clean-worktree check; do not hand-edit or pin the generated file with a brittle workaround.
