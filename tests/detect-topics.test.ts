@@ -67,6 +67,18 @@ describe("detectTopics", () => {
     expect(result.topics[0].ranges.reduce((total, range) => total + range.excerpt.length, 0)).toBe(4_000);
   });
 
+  it("allows two topics to share a source segment that grounds both decisions", async () => {
+    const client = clientWith({ topics: [
+      providerTopic(),
+      providerTopic({ id: "topic-2", title: "Communication", summary: "Choose a communication route." }),
+    ] });
+
+    const result = await detectTopics({ client, transcript, model: "gpt-5.4-nano" });
+
+    expect(result.topics).toHaveLength(2);
+    expect(result.topics[0].ranges).toEqual(result.topics[1].ranges);
+  });
+
   it("rejects six 800-character segments whose combined source exceeds 4,000 characters", async () => {
     const oversizedTranscript = "根".repeat(4_800);
     const oversizedSegments = segmentTranscript(oversizedTranscript);
@@ -96,7 +108,6 @@ describe("detectTopics", () => {
   it.each([
     ["unknown ID", { topics: [providerTopic({ segmentIds: ["segment-99"] })] }],
     ["duplicate ID within topic", { topics: [providerTopic({ segmentIds: [segments[0].id, segments[0].id] })] }],
-    ["shared ID across topics", { topics: [providerTopic(), providerTopic({ id: "topic-2" })] }],
     ["seven segments", { topics: [providerTopic({ segmentIds: Array.from({ length: 7 }, (_, index) => `segment-${index + 1}`) })] }],
     ["six topics", { topics: Array.from({ length: 6 }, (_, index) => providerTopic({ id: `topic-${index + 1}`, segmentIds: [`segment-${index + 1}`] })) }],
   ])("rejects %s after one malformed-response retry", async (_label, value) => {
