@@ -4,15 +4,15 @@ Verified on 2026-07-19 (Asia/Tokyo).
 
 Public URL: <https://livenode-decision-trace.takahiro-nochi.workers.dev>
 
-Cloudflare Worker version: `8ae8106c-1a41-4c01-b6d2-d26d5c4c06a9`
+Cloudflare Worker version: `ea399707-e83e-4ef5-9e6c-ccafe30889e3`
 
-Deployed implementation commit: `8607ab8e0c9f78df2cd99c9ab805069f1dc440ba`
+Deployed implementation commit: `cac3778`
 
 No submitted memo text or model output is stored in this document or the screenshots.
 
 ## Current production acceptance — PASS
 
-Worker `8ae8106c-1a41-4c01-b6d2-d26d5c4c06a9` is the current acceptance target. Topic detection returns server-resolved source ranges from stable transcript segment IDs. Topic analysis accepts only evidence grounded in those verified excerpts; an ungrounded result receives one bounded regeneration attempt before a safe public error is returned.
+Worker `ea399707-e83e-4ef5-9e6c-ccafe30889e3` is the current acceptance target. Topic detection returns server-resolved source ranges from stable transcript segment IDs. A source segment may ground multiple distinct topics when one passage supports both decisions; duplicate source IDs within a single topic remain invalid. Topic analysis accepts only evidence grounded in those verified excerpts; an ungrounded result receives one bounded regeneration attempt before a safe public error is returned.
 
 ## Product-scope truth at this acceptance target
 
@@ -57,13 +57,20 @@ Non-sensitive input-state screenshots:
 ## Current multi-topic acceptance evidence
 
 - Public page: HTTP 200 with meeting mode selected first and the 30,000-character limit visible without invoking OpenAI.
-- Bounded production topic detection: HTTP 200 with grounded topics returned.
+- Bounded production topic detection using the fictional demo transcript: HTTP 200 in 3,337 ms with two grounded topics returned.
 - Bounded production topic analysis after the final grounding retry fix: HTTP 200 with `topicMatched: true` and a validated trace.
+- End-to-end production capture completed topic detection, two trace generations, and browser-side ZIP export without a fallback or automatic rerun.
 - Full 30,000-character, five-topic production cost and latency were not measured in this acceptance run and are not claimed.
+
+## Demo video and export artifacts
+
+- `demo-video-en.mp4`: 88.24 seconds, 1440 × 900, H.264 video and AAC audio, with English narration and burned-in English captions.
+- `demo-download.zip`: seven files — meeting summary, two Decision Traces, two KX Notes, action list, and manifest.
+- The transcript is fictional and contains exactly two decision themes. No private meeting content is used.
 
 ## Current local automated checks
 
-- `npm test`: PASS, 163/163
+- `npm test`: PASS, 167/167
 - `npm run build`: PASS
 - `npx playwright test`: PASS, 8/8
 - `git diff --check`: PASS
@@ -84,15 +91,15 @@ All earlier Worker runs are historical diagnostic evidence only. They do not qua
 
 Current production acceptance: **PASS**.
 
-Submission artifacts still pending:
+Submission publication steps still pending:
 
-- public URL for the recorded demo video
-- public source repository link
+- public YouTube URL for the recorded demo video
+- public visibility or judge access for the source repository
 
 Completed submission image:
 
 - [3:2 project thumbnail](screenshots/thumbnail-3x2.png) — 1200 × 800, generated from a memo-free mocked result
 
-Demo media to replace before submission:
+Current demo media:
 
-- [Previous 75-second Japanese narrated demo](demo-video-ja.mp4) — single-memo version; re-record the current multi-topic and ZIP flow before submission
+- [88-second English narrated demo](demo-video-en.mp4) — current multi-topic and ZIP flow
