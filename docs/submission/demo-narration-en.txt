@@ -1,0 +1,15 @@
+AI can give us an answer in seconds. LiveNode Decision Trace preserves why a decision was made.
+
+I paste one fictional meeting transcript. The public demo accepts up to thirty thousand characters.
+
+GPT-5.6 detects two decision topics and grounds each topic in exact transcript segments.
+
+Before generation, the user can review, rename, select, or exclude each topic.
+
+Each selected topic becomes a Decision Trace: situation, assumptions, criteria, trade-offs, recommendation, and next actions.
+
+Grounded evidence stays separate from AI inference, so a polished answer cannot silently become a supplied fact.
+
+The browser creates a Markdown ZIP with a meeting summary, actions, Decision Traces, and reusable KX Notes.
+
+Codex accelerated design, implementation, testing, and deployment. GPT-5.6 powers topic detection and structured analysis.
