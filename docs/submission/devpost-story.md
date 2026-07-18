@@ -12,9 +12,13 @@ AI can give us a recommendation in seconds, but the useful part of a real decisi
 
 Most AI memory systems preserve facts, summaries, and final answers. LiveNode starts from a different belief: the durable part of a person is their judgment process—the claims they considered, the evidence they trusted, the constraints they accepted, the alternatives they rejected, and the connections that shaped the decision. Capturing that process creates an intermediate layer between a general-purpose LLM and the person using it. Instead of asking the model only for the statistical center of its training, this layer can help future AI interactions lean toward that person's own reasoning and values. The result is memory for a future self: a record that explains not only what happened, but why. Because the record is portable Markdown, it can also support continuity across projects and AI tools without depending on one chat history or model provider.
 
+LiveNode transforms not only a person's knowledge but also the path of their judgment into a form AI can reference, serving as an intermediate layer that mediates FUSION between human and AI. Rather than giving AI access to the person themselves, it provides a structure through which AI can access the judgment framework that person has reviewed and chosen to preserve.
+
 ## 日本語訳（上記英文の正本対応）
 
 一般的なAIメモリーが残すのは、事実、要約、最終回答です。LiveNodeは、人にとって長く残すべきものは判断プロセスだと考えます。何を主張として考え、どの根拠を信じ、どんな制約を受け入れ、どの選択肢を退け、何との接続から判断したのか。その記録は、汎用LLMと利用者本人の間に置かれる中間レイヤーになります。モデルの学習データが生む統計的な中心だけに頼るのではなく、未来のAI作業を本人の経験・価値観・判断軸へ寄せるための材料になります。これは未来の自分のための記憶です。何が起きたかだけでなく、なぜそう考えたのかを残します。持ち運べるMarkdownにすることで、一つのチャット履歴やモデル提供者に依存せず、プロジェクトやAIをまたぐ継続性も支えます。
+
+LiveNodeは、人間の知識だけでなく判断の経緯をAIが参照できる形へ変換し、人間とAIの融合（FUSION）を仲介する中間層です。AIが人間そのものへアクセスするのではなく、その人が確認して残すことを選んだ判断軸へアクセスするための構造を提供します。
 
 # What it does
 
