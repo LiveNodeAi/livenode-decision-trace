@@ -10,11 +10,11 @@ LiveNode treats the decision process itself as memory: the claims considered, ev
 
 The project has three distinct layers:
 
-1. **Public web demo — capture layer (available now):** converts one Japanese or English decision memo into a reviewed six-part Decision Trace, then produces Decision Trace Markdown and KX Note Markdown for copying.
+1. **Public web demo — capture layer (available now):** accepts either a focused idea memo or a meeting transcript. A memo becomes one reviewed six-part Decision Trace. A transcript can be split into up to five reviewed decision topics, analyzed with at most two requests in parallel, and downloaded as a Markdown ZIP.
 2. **Local KX — working refinement layer (in active use by the developer):** a human-reviewed Markdown workflow that distills conversations and reconnects durable knowledge over time. This workflow is not hosted inside the public demo.
 3. **Distributable Skill — planned delivery layer:** a future package intended to bring the workflow into other AI environments and personal knowledge stores. Cross-AI installation and automatic Obsidian or Notion saving are not implemented in the public demo.
 
-This phase is adding transcript topic detection for up to five reviewed topics, per-topic generation with limited parallelism, and a browser-generated Markdown ZIP. Those multi-topic and ZIP capabilities are **in development**, not part of the currently implemented demo described above.
+The public demo now includes transcript topic detection for up to five reviewed topics, per-topic generation with at most two analyses in parallel, retry of failed topics without discarding successful ones, and a browser-generated Markdown ZIP. The meeting input accepts up to 30,000 characters. Direct Obsidian or Notion saving remains future Skill work and is not presented as a live web capability.
 
 ## The problem
 
@@ -49,14 +49,18 @@ Ordered next actions are appended as an operational supplement without changing 
 
 ```text
 Browser (Next.js UI)
-  -> POST /api/analyze (validated memo only)
+  -> focused memo: POST /api/analyze
+  -> transcript: POST /api/topics/detect
+     -> human topic review, selection, and title editing
+     -> POST /api/topics/analyze (maximum two in parallel)
   -> Cloudflare Worker / OpenNext runtime
   -> OpenAI Responses API (structured output)
   -> Zod validation
-  -> six-part Decision Trace JSON
+  -> grounded six-part Decision Trace JSON
   -> local deterministic Markdown conversion
      -> Decision Trace Markdown
      -> KX Note Markdown
+     -> meeting summary, action list, manifest, and Markdown ZIP
 ```
 
 - Next.js 16, React 19, and TypeScript

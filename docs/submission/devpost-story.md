@@ -18,9 +18,15 @@ Most AI memory systems preserve facts, summaries, and final answers. LiveNode st
 
 # What it does
 
-A user pastes a Japanese or English decision memo, or chooses one of three built-in examples. The application returns six readable sections: Situation, Assumptions, Decision criteria, Options and trade-offs, Recommendation, and Next actions. Every analytical point is labeled as evidence from the input or AI inference.
+A user can paste either a focused Japanese or English idea memo, or a meeting transcript of up to 30,000 characters. An idea memo returns one six-part trace: Situation, Assumptions, Decision criteria, Options and trade-offs, Recommendation, and Next actions. In meeting mode, the application detects up to five grounded decision topics, lets the user review, rename, select, or exclude them, and generates the selected traces with no more than two analyses running in parallel. Every analytical point is labeled as evidence from the input or AI inference.
 
-The same result can then be copied in two forms. Decision Trace Markdown is designed for a person to review and act on. KX Note Markdown maps the result into five stable fields—Claim, Evidence, Data, Constraints, and Links—so another AI can retrieve and reuse the reasoning later without inventing connections.
+An idea result can be copied in two forms. Decision Trace Markdown is designed for a person to review and act on. KX Note Markdown maps the result into five stable fields—Claim, Evidence, Data, Constraints, and Links—so another AI can retrieve and reuse the reasoning later without inventing connections. A meeting result can be downloaded as one Markdown ZIP containing the meeting summary, action list, manifest, and per-topic Decision Trace and KX Note files. If one topic fails, completed topics remain available and only the failed topic needs to be retried.
+
+## 「What it does」日本語訳
+
+利用者は、日本語・英語のアイデアメモ、または最大30,000文字の会議文字起こしを貼り付けます。アイデアメモでは、状況、前提、判断基準、選択肢とトレードオフ、推奨、次のアクションからなる1つのDecision Traceを生成します。会議モードでは、根拠のある判断テーマを最大5つ検出し、利用者が確認、タイトル修正、選択、除外してから、同時に最大2テーマずつ生成します。各分析項目には、入力からの根拠かAIによる推論かを表示します。
+
+アイデアメモは、人が確認するDecision Trace Markdownと、別のAIが判断過程を再利用するためのKX Note Markdownとしてコピーできます。会議では、会議サマリー、アクション一覧、マニフェスト、各テーマのDecision TraceとKX Noteを1つのMarkdown ZIPにまとめます。1テーマが失敗しても完成済みの結果は残り、失敗したテーマだけを再試行できます。
 
 # How we built it
 
@@ -40,6 +46,8 @@ The other challenge was making a real AI demo safe to leave public. We kept secr
 - Japanese and English use the same validated schema while preserving language-appropriate labels.
 - Supplied evidence and AI inference are visible at the point of each claim.
 - One result becomes both a human-readable Decision Trace and an AI-reusable KX Note.
+- A long meeting transcript becomes up to five human-reviewed decision topics and one portable Markdown ZIP.
+- Topic generation is capped at two concurrent analyses; partial success is preserved and failed topics can be retried independently.
 - The deployed application has no user database and does not intentionally log or persist submitted memos.
 - Automated tests cover success, malformed output, timeout, provider failure, secrets, copy formats, and mobile layout.
 
@@ -51,18 +59,18 @@ Structured output is most valuable when the structure reflects a real human revi
 
 The project has three deliberately separate layers:
 
-- **Web demo — capture layer:** the currently implemented public experience accepts one decision memo and produces a validated Decision Trace plus two copyable Markdown formats.
+- **Web demo — capture layer:** the currently implemented public experience accepts a focused idea memo or a meeting transcript. It produces a validated single trace or up to five reviewed topic traces, with a browser-generated Markdown ZIP for meetings.
 - **Local KX — working refinement layer:** the developer already uses a human-reviewed Markdown pipeline to capture, distill, and reconnect knowledge. That local workflow is not hosted by this demo.
 - **Distributable Skill — planned delivery layer:** packaging the workflow for other people, AI environments, and storage adapters is future work. Automatic installation across AI tools and direct Obsidian or Notion saving are not implemented here.
 
-This phase is implementing the next web-demo step: paste a longer transcript, review up to five detected decision topics, generate selected traces with limited parallelism, and download a browser-generated Markdown ZIP. These multi-topic and ZIP capabilities are in development and are not claimed as currently available. Later work may connect reviewed traces to personal knowledge stores and compare new decisions with earlier ones, but long-term personalization is not yet automatic.
+The multi-topic transcript and Markdown ZIP flow is now live in the public demo. The next layer is distribution: connecting reviewed traces to personal knowledge stores and comparing new decisions with earlier ones. Direct Obsidian or Notion saving, cross-AI installation, and long-term automatic personalization are not implemented in this web demo.
 
 ## 「What's next」日本語訳
 
 本プロジェクトは、3つの層を意図的に分けています。
 
-- **Webデモ＝取り込み層：** 現在実装済みの公開体験では、1つの判断メモから検証済みDecision Traceと、コピー可能な2種類のMarkdownを生成します。
+- **Webデモ＝取り込み層：** 現在実装済みの公開体験では、アイデアメモなら1つの検証済みDecision Traceを生成します。会議・文字起こしなら最大30,000文字から最大5つの判断テーマを検出し、人が確認・選択・タイトル修正したうえでテーマ別Traceを生成し、Markdown ZIPとして保存できます。
 - **ローカルKX＝実働する精錬層：** 開発者は、人間が確認しながら知識を取り込み、蒸留し、再接続するMarkdownパイプラインをすでに実運用しています。ただし、このローカル運用はWebデモ内にホストされていません。
 - **配布Skill＝将来の提供層：** 他の利用者、AI環境、保存先へワークフローを届けるパッケージ化は今後の予定です。複数AIへの自動導入やObsidian・Notionへの直接保存は、このデモでは実装していません。
 
-現在のフェーズでは、長い文字起こしから最大5つの判断テーマを検出し、人が確認して選択したテーマを制限付きで並列生成し、ブラウザでMarkdown ZIPを作る機能を実装中です。複数テーマとZIPは開発中であり、現時点で利用可能とは説明しません。その後、確認済みTraceを個人の知識基盤へ接続し、過去の判断との比較へ広げる可能性がありますが、長期的な個人化はまだ自動化されていません。
+複数テーマの文字起こしとMarkdown ZIPは、現在の公開デモで利用できます。次の段階は、確認済みTraceを個人の知識基盤へ接続し、過去の判断と比較できる配布層です。Obsidian・Notionへの直接保存、複数AIへの自動導入、長期的な自動個人化は、このWebデモではまだ実装していません。

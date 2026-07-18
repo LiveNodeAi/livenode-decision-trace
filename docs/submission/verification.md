@@ -1,28 +1,32 @@
 # Production verification
 
-Verified on 2026-07-16 (Asia/Tokyo).
+Verified on 2026-07-19 (Asia/Tokyo).
 
 Public URL: <https://livenode-decision-trace.takahiro-nochi.workers.dev>
 
-Cloudflare Worker version: `a0d748ce-b031-47eb-896c-68647a812d97`
+Cloudflare Worker version: `8ae8106c-1a41-4c01-b6d2-d26d5c4c06a9`
 
-Deployed implementation commit: `c45b0c37fe3f92f6fdbf5c852851299f7f691760`
+Deployed implementation commit: `8607ab8e0c9f78df2cd99c9ab805069f1dc440ba`
 
 No submitted memo text or model output is stored in this document or the screenshots.
 
 ## Current production acceptance — PASS
 
-Worker `a0d748ce-b031-47eb-896c-68647a812d97` is the sole current acceptance target. Structurally valid grounding mismatches are repaired deterministically: invalid supplied evidence is downgraded to explicit inference and ungrounded links are dropped before canonical validation.
+Worker `8ae8106c-1a41-4c01-b6d2-d26d5c4c06a9` is the current acceptance target. Topic detection returns server-resolved source ranges from stable transcript segment IDs. Topic analysis accepts only evidence grounded in those verified excerpts; an ungrounded result receives one bounded regeneration attempt before a safe public error is returned.
 
 ## Product-scope truth at this acceptance target
 
 The submission describes three separate layers. This is a positioning statement, not evidence that all three layers are deployed:
 
-- **Web demo — capture layer:** the accepted public Worker currently processes one Japanese or English decision memo and produces one validated Decision Trace plus two copyable Markdown formats.
+- **Web demo — capture layer:** the accepted public Worker supports a focused Japanese or English idea memo and a meeting transcript of up to 30,000 characters. Meeting mode detects up to five topics, allows human review and selection, generates at most two topic traces concurrently, and creates a Markdown ZIP in the browser.
 - **Local KX — working refinement layer:** the developer operates a separate, human-reviewed Markdown workflow for distilling and reconnecting knowledge. It is not hosted by the accepted public Worker.
 - **Distributable Skill — planned delivery layer:** packaging this workflow for other users and AI environments is future work, not a deployed capability of the accepted public Worker.
 
-Multi-topic transcript detection (up to five reviewed topics) and browser-generated Markdown ZIP export are in development in the current implementation phase. They are not included in this production acceptance and must not be presented as available in the accepted public version. Direct automatic saving to Obsidian or Notion is also not implemented.
+Multi-topic transcript detection and browser-generated Markdown ZIP export are included in this production version and may be presented as available. Direct automatic saving to Obsidian or Notion is not implemented and must remain described as future Skill work.
+
+### Earlier single-memo regression evidence
+
+The following checks were captured against the earlier accepted single-memo Worker. They remain historical regression evidence, not proof of the current multi-topic production path.
 
 | Input | HTTP | Duration | Six sections | Language | Exposure |
 | --- | ---: | ---: | ---: | --- | --- |
@@ -32,7 +36,7 @@ Multi-topic transcript detection (up to five reviewed topics) and browser-genera
 | Desktop 1440 public-policy | 200 | 8,450 ms | Yes | Japanese | Safe |
 | Mobile 375 operations | 200 | 8,359 ms | Yes | Japanese | Safe |
 
-Each check was run exactly once with no harness retry or fallback. Desktop and mobile each observed one API request, rendered six cards, produced distinct non-empty Decision Trace and KX Note exports with every required heading, had no horizontal overflow, exposed no memo/key/stack content, completed below 28 seconds, and exited with code 0. Before production use, both isolated UI harnesses passed against a local mocked endpoint with hydration and request-count assertions.
+Each historical check was run exactly once with no harness retry or fallback. Desktop and mobile each observed one API request, rendered six cards, produced distinct non-empty Decision Trace and KX Note exports with every required heading, had no horizontal overflow, exposed no memo/key/stack content, completed below 28 seconds, and exited with code 0.
 
 ## Deployment and privacy boundary
 
@@ -50,13 +54,19 @@ Non-sensitive input-state screenshots:
 - [Desktop](screenshots/desktop.png)
 - [375px](screenshots/mobile-375.png)
 
+## Current multi-topic acceptance evidence
+
+- Public page: HTTP 200 with meeting mode selected first and the 30,000-character limit visible without invoking OpenAI.
+- Bounded production topic detection: HTTP 200 with grounded topics returned.
+- Bounded production topic analysis after the final grounding retry fix: HTTP 200 with `topicMatched: true` and a validated trace.
+- Full 30,000-character, five-topic production cost and latency were not measured in this acceptance run and are not claimed.
+
 ## Current local automated checks
 
-- `npm test`: PASS, 79/79
+- `npm test`: PASS, 163/163
 - `npm run build`: PASS
-- `npx playwright test`: PASS, 2/2
+- `npx playwright test`: PASS, 8/8
 - `git diff --check`: PASS
-- Secret scan across tracked and generated client assets: PASS, 73 files / 0 matches
 
 ## Historical / superseded evidence
 
@@ -68,7 +78,7 @@ All earlier Worker runs are historical diagnostic evidence only. They do not qua
 - `713f0889-aad7-47b8-b5fd-eb3c1abfa03c`: GPT-5.6 Luna deployment; passed its then-current acceptance before later safety changes.
 - `d9ea7075-8da9-4ac6-8414-729dd8ca8d2d`: safety-hardening deployment; stopped on an English HTTP 502.
 - `a7e0b721-70aa-4942-a8ed-7c85574d4d06`: provider-compatible schema canary; stopped on `ANALYSIS_COULD_NOT_GROUND`.
-- The first combined UI harness against `a0d748ce-b031-47eb-896c-68647a812d97` had an observability gap. It was superseded by the separately captured desktop and mobile PASS results above, without reusing evidence from another Worker.
+- `a0d748ce-b031-47eb-896c-68647a812d97`: accepted single-memo version before the multi-topic transcript and ZIP flow was deployed.
 
 ## Acceptance summary
 
@@ -83,6 +93,6 @@ Completed submission image:
 
 - [3:2 project thumbnail](screenshots/thumbnail-3x2.png) — 1200 × 800, generated from a memo-free mocked result
 
-Completed demo media:
+Demo media to replace before submission:
 
-- [75-second Japanese narrated demo](demo-video-ja.mp4) — 1200 × 800 MP4, generated from a memo-free mocked result
+- [Previous 75-second Japanese narrated demo](demo-video-ja.mp4) — single-memo version; re-record the current multi-topic and ZIP flow before submission
