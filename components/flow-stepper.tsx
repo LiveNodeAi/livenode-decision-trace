@@ -1,15 +1,10 @@
 export type FlowStep = 1 | 2 | 3 | 4;
+import type { UiStrings } from "@/lib/ui-strings";
 
-const steps = [
-  { number: 1, label: "貼り付け" },
-  { number: 2, label: "テーマ確認" },
-  { number: 3, label: "Trace生成" },
-  { number: 4, label: "ZIP保存" },
-] as const;
-
-export function FlowStepper({ current }: { current: FlowStep }): React.ReactElement {
+export function FlowStepper({ current, strings }: { current: FlowStep; strings: UiStrings }): React.ReactElement {
+  const steps = strings.flowSteps.map((label, index) => ({ number: index + 1, label }));
   return (
-    <ol className="flow-stepper" aria-label="会議ログからMarkdownまでの流れ">
+    <ol className="flow-stepper" aria-label={strings.flowList}>
       {steps.map(({ number, label }) => {
         const complete = number < current;
         const active = number === current;
@@ -18,11 +13,11 @@ export function FlowStepper({ current }: { current: FlowStep }): React.ReactElem
             key={number}
             className={complete ? "flow-step flow-step-complete" : active ? "flow-step flow-step-current" : "flow-step"}
             aria-current={active ? "step" : undefined}
-            aria-label={`${number}${label}${complete ? "完了" : active ? "現在" : ""}`}
+            aria-label={`${number}${label}${complete ? strings.complete : active ? strings.current : ""}`}
           >
             <span className="flow-step-number">{number}</span>
             <span>{label}</span>
-            {complete ? <span className="flow-step-status">完了</span> : active ? <span className="flow-step-status">現在</span> : null}
+            {complete ? <span className="flow-step-status">{strings.complete}</span> : active ? <span className="flow-step-status">{strings.current}</span> : null}
           </li>
         );
       })}

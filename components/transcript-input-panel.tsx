@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react";
+import { transcriptSamples } from "@/lib/transcript-samples";
+import type { UiLanguage, UiStrings } from "@/lib/ui-strings";
 
 type TranscriptInputPanelProps = {
   transcript: string;
@@ -6,17 +8,22 @@ type TranscriptInputPanelProps = {
   error: string | null;
   onChange: (value: string) => void;
   onDetect: () => void;
+  uiLanguage: UiLanguage;
+  strings: UiStrings;
 };
 
-export function TranscriptInputPanel({ transcript, detecting, error, onChange, onDetect }: TranscriptInputPanelProps) {
+export function TranscriptInputPanel({ transcript, detecting, error, onChange, onDetect, uiLanguage, strings }: TranscriptInputPanelProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => { textareaRef.current?.focus(); }, []);
 
   return (
     <section className="input-panel" aria-labelledby="transcript-title">
-      <h2 id="transcript-title">会議・文字起こしからテーマを見つける</h2>
-      <p>議事録や会話ログを貼り付け、最大5つの判断テーマに分けます。確認後、テーマごとのDecision Traceを生成できます。</p>
-      <label className="field-label" htmlFor="meeting-transcript">文字起こし</label>
+      <h2 id="transcript-title">{strings.transcriptTitle}</h2>
+      <p>{strings.transcriptIntro}</p>
+      <div className="samples">
+        <button type="button" onClick={() => onChange(transcriptSamples[uiLanguage])} disabled={detecting}>{strings.useTranscriptSample}</button>
+      </div>
+      <label className="field-label" htmlFor="meeting-transcript">{strings.transcriptLabel}</label>
       <textarea
         ref={textareaRef}
         id="meeting-transcript"
@@ -29,13 +36,13 @@ export function TranscriptInputPanel({ transcript, detecting, error, onChange, o
         aria-describedby="transcript-help transcript-count"
       />
       <div className="field-meta">
-        <p id="transcript-help">80〜30,000文字。内容は処理のためOpenAIへ送信され、このアプリには保存されません。</p>
-        <p id="transcript-count">{transcript.length.toLocaleString("ja-JP")}文字</p>
+        <p id="transcript-help">{strings.transcriptHelp}</p>
+        <p id="transcript-count">{transcript.length.toLocaleString(uiLanguage === "ja" ? "ja-JP" : "en-US")} {strings.chars}</p>
       </div>
       {error ? <p role="alert">{error}</p> : null}
-      {detecting ? <p role="status">判断テーマを検出しています。</p> : null}
+      {detecting ? <p role="status">{strings.detectingStatus}</p> : null}
       <button className="primary-action" type="button" onClick={onDetect} disabled={detecting}>
-        {detecting ? "検出中…" : "テーマを検出"}
+        {detecting ? strings.detectingButton : strings.detectButton}
       </button>
     </section>
   );

@@ -45,6 +45,8 @@ strong { color: var(--ink); }
 
 main { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 72px 0 100px; position: relative; }
 .masthead { margin-bottom: 48px; padding-bottom: 30px; border-bottom: 1px solid var(--line); position: relative; }
+.language-toggle { float: right; color: var(--cyan); border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px; text-decoration: none; font-size: .8rem; letter-spacing: .05em; }
+.language-toggle:hover { border-color: var(--cyan); background: rgba(99,230,226,.06); }
 .masthead::after { content: ""; position: absolute; left: 0; bottom: -1px; width: 96px; border-bottom: 2px solid var(--cyan); }
 .eyebrow, .section-label { color: var(--cyan); text-transform: uppercase; letter-spacing: .18em; font: 600 .72rem/1.4 ui-monospace, monospace; }
 h1 { font: 500 clamp(3rem, 8vw, 6.8rem)/.9 Georgia, serif; letter-spacing: -.065em; margin: 18px 0 20px; }

@@ -61,6 +61,17 @@ describe("DecisionTraceApp", () => {
     });
   });
 
+  it("renders the complete first-step experience in English", () => {
+    render(<DecisionTraceApp uiLanguage="en" />);
+    expect(screen.getByRole("navigation", { name: "Input mode" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Meeting transcript" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("heading", { name: "Find decisions in a meeting transcript" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Transcript" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Use English sample transcript" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Detect topics" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "From meeting transcript to Markdown" })).toBeInTheDocument();
+  });
+
   it("shows meeting transcript first and switches to the idea memo", async () => {
     render(<DecisionTraceApp />);
     const modeButtons = within(screen.getByRole("navigation", { name: "入力モード" })).getAllByRole("button");
