@@ -1,4 +1,6 @@
-const layers = [
+import type { UiLanguage } from "@/lib/ui-strings";
+
+const jaLayers = [
   {
     title: "Web版 — 取り込み層",
     description:
@@ -16,16 +18,24 @@ const layers = [
   },
 ] as const;
 
-export function StorageAdapters() {
+const enLayers = [
+  { title: "Web demo — capture layer", description: "Split a conversation into decision topics, review each Decision Trace, and export Markdown. The ZIP download is the only storage action implemented in this web demo." },
+  { title: "Local KX — refinement layer", description: "Human-reviewed Markdown distillation, refinement, and reconnection already run locally with AI-Brain. This web demo does not connect directly to that local KX environment." },
+  { title: "Distribution skill — future layer", description: "Storage adapters for Obsidian, Notion, and similar tools are not implemented. A future release would require each user to configure authentication and permissions for their environment." },
+] as const;
+
+export function StorageAdapters({ uiLanguage = "ja" }: { uiLanguage?: UiLanguage }) {
+  const en = uiLanguage === "en";
+  const layers = en ? enLayers : jaLayers;
   return (
     <section aria-labelledby="storage-adapters-title">
       <header>
         <p>KX workflow</p>
-        <h2 id="storage-adapters-title">Decision TraceからKXへ</h2>
-        <p>現在動くWeb体験、開発者が実運用するローカル環境、将来提供するSkillを区別しています。</p>
+        <h2 id="storage-adapters-title">{en ? "From Decision Trace to KX" : "Decision TraceからKXへ"}</h2>
+        <p>{en ? "This separates the working web experience, the developer's production local workflow, and a future distributable skill." : "現在動くWeb体験、開発者が実運用するローカル環境、将来提供するSkillを区別しています。"}</p>
       </header>
 
-      <ol aria-label="Decision TraceとKXの3層">
+      <ol aria-label={en ? "Three layers from Decision Trace to KX" : "Decision TraceとKXの3層"}>
         {layers.map((layer) => (
           <li key={layer.title}>
             <h3>{layer.title}</h3>

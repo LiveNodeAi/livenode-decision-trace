@@ -2,7 +2,7 @@ AI can give us an answer in seconds. LiveNode Decision Trace preserves why a dec
 
 I paste one fictional meeting transcript. The public demo accepts up to thirty thousand characters.
 
-GPT-5.6 detects two decision topics and grounds each topic in exact transcript segments.
+A low-cost model detects two decision topics and grounds each topic in exact transcript segments.
 
 Before generation, the user can review, rename, select, or exclude each topic.
 
@@ -12,4 +12,4 @@ Grounded evidence stays separate from AI inference, so a polished answer cannot 
 
 The browser creates a Markdown ZIP with a meeting summary, actions, Decision Traces, and reusable KX Notes.
 
-Codex built the demo. GPT-5.6 detects and structures decisions.
+Codex built the demo. GPT-5.6 structures each reviewed decision.

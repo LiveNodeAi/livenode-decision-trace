@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "capture:thumbnail": "node scripts/capture-thumbnail.mjs",
+    "capture:result:en": "node scripts/capture-result-en.mjs",
     "capture:demo": "node scripts/capture-demo.mjs",
     "capture:demo:rehearsal": "DEMO_TARGET=mock node scripts/capture-demo.mjs",
     "capture:demo:production": "DEMO_TARGET=production node scripts/capture-demo.mjs",

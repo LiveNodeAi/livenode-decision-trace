@@ -7,6 +7,7 @@ import { decisionTraceSchema, type DecisionTrace } from "@/lib/decision-trace-sc
 import { createTopicPool, type TopicPoolController } from "@/lib/topic-pool";
 import { topicDetectionSchema, type DetectedTopic } from "@/lib/transcript-contract";
 import { validateMemo } from "@/lib/validation";
+import { uiStrings, type UiLanguage } from "@/lib/ui-strings";
 import { InputPanel } from "./input-panel";
 import { FlowStepper, type FlowStep } from "./flow-stepper";
 import { MultiTraceResults, type MultiTraceEntry } from "./multi-trace-results";
@@ -26,7 +27,7 @@ type TranscriptState =
   | { status: "generating"; transcript: string; transcriptHash: string; topics: ReviewedTopic[]; completed: number; total: number }
   | { status: "result"; transcript: string; transcriptHash: string; entries: MultiTraceEntry[] };
 
-const errors: Record<string, string> = {
+const jaErrors: Record<string, string> = {
   MEMO_TOO_SHORT: "判断の背景が分かるように、80文字以上で入力してください。",
   MEMO_TOO_LONG: "入力は12,000文字以内にしてください。",
   TRANSCRIPT_TOO_SHORT: "文字起こしは80文字以上で入力してください。",
@@ -43,6 +44,23 @@ const errors: Record<string, string> = {
   MALFORMED_RESPONSE: "分析結果を確認できませんでした。入力内容は残っています。もう一度試してください。",
 };
 
+const enErrors: Record<string, string> = {
+  MEMO_TOO_SHORT: "Enter at least 80 characters so the decision context is clear.",
+  MEMO_TOO_LONG: "Keep the input within 12,000 characters.",
+  TRANSCRIPT_TOO_SHORT: "Enter a transcript of at least 80 characters.",
+  TRANSCRIPT_TOO_LONG: "Keep the transcript within 30,000 characters.",
+  REQUEST_TOO_LARGE: "The request is too large. Shorten the input and try again.",
+  RATE_LIMITED: "The usage limit has been reached. Wait a moment and try again.",
+  ANALYSIS_TIMEOUT: "The analysis took too long. Your input is still here; try again.",
+  ANALYSIS_COULD_NOT_GROUND: "We couldn't ground the analysis in your source text. Review it and try again.",
+  ANALYSIS_REFUSED: "This content couldn't be analyzed. Please revise the input.",
+  ANALYSIS_BUSY: "Analysis is busy. Wait a moment and try again.",
+  ANALYSIS_REQUEST_REJECTED: "The analysis request was rejected. Please review the input.",
+  ANALYSIS_UNAVAILABLE: "The analysis could not be completed. Your input is still here; try again.",
+  INVALID_REQUEST: "Review the input and try again.",
+  MALFORMED_RESPONSE: "The analysis result could not be verified. Your input is still here; try again.",
+};
+
 function errorCode(body: unknown, fallback: string): string {
   return typeof body === "object" && body !== null && "error" in body ? String(body.error) : fallback;
 }
@@ -57,7 +75,9 @@ function sourceRangesMatch(value: unknown[], expected: DetectedTopic["ranges"]):
   });
 }
 
-export function DecisionTraceApp() {
+export function DecisionTraceApp({ uiLanguage = "ja" }: { uiLanguage?: UiLanguage }) {
+  const strings = uiStrings[uiLanguage];
+  const errors = uiLanguage === "ja" ? jaErrors : enErrors;
   const [mode, setMode] = useState<"single" | "transcript">("transcript");
   const [state, setState] = useState<AppState>({ status: "input", memo: "", error: null });
   const [transcriptState, setTranscriptState] = useState<TranscriptState>({ status: "input", transcript: "", error: null });
@@ -206,40 +226,41 @@ export function DecisionTraceApp() {
   return (
     <>
       {mode === "transcript" ? (
-        <section className="flow-overview" aria-label="会議ログの処理フロー">
-          <p>会議ログを最大5テーマへ分け、判断の経緯と次の行動をMarkdownにします。</p>
-          <FlowStepper current={flowStep} />
+        <section className="flow-overview" aria-label={strings.flowRegion}>
+          <p>{strings.flowIntro}</p>
+          <FlowStepper current={flowStep} strings={strings} />
         </section>
       ) : null}
-      <nav className="mode-switch" aria-label="入力モード">
-        <button type="button" aria-pressed={mode === "transcript"} onClick={() => setMode("transcript")} disabled={busy}>会議・文字起こし</button>
-        <button type="button" aria-pressed={mode === "single"} onClick={() => setMode("single")} disabled={busy}>アイデアメモ</button>
+      <nav className="mode-switch" aria-label={strings.modeNav}>
+        <button type="button" aria-pressed={mode === "transcript"} onClick={() => setMode("transcript")} disabled={busy}>{strings.transcriptMode}</button>
+        <button type="button" aria-pressed={mode === "single"} onClick={() => setMode("single")} disabled={busy}>{strings.memoMode}</button>
       </nav>
       {mode === "single" ? (state.status === "result" ? (
         <ResultPanel trace={state.trace} highImpact={state.highImpact} onReset={() => setState({ status: "input", memo: "", error: null })} />
       ) : (
-        <InputPanel memo={state.memo} error={state.status === "error" || state.status === "input" ? state.error : null} generating={state.status === "generating"} onMemoChange={updateMemo} onSubmit={submit} />
+        <InputPanel memo={state.memo} error={state.status === "error" || state.status === "input" ? state.error : null} generating={state.status === "generating"} onMemoChange={updateMemo} onSubmit={submit} uiLanguage={uiLanguage} strings={strings} />
       )) : transcriptState.status === "review" ? (
         <TopicReviewPanel
           topics={transcriptState.topics}
           onToggle={(id) => updateTopics((topics) => topics.map((topic) => topic.id === id ? { ...topic, selected: !topic.selected } : topic))}
           onTitleChange={(id, editedTitle) => updateTopics((topics) => topics.map((topic) => topic.id === id ? { ...topic, editedTitle } : topic))}
           onGenerate={generateSelected}
+          strings={strings}
         />
       ) : transcriptState.status === "generating" ? (
         <section className="input-panel" aria-labelledby="multi-progress-title">
-          <h2 id="multi-progress-title">テーマ別Traceを生成</h2>
-          <p role="status" aria-live="polite">{transcriptState.completed}/{transcriptState.total}生成中</p>
+          <h2 id="multi-progress-title">{strings.progressTitle}</h2>
+          <p role="status" aria-live="polite">{strings.progress(transcriptState.completed, transcriptState.total)}</p>
           <ul className="generation-list">
             {transcriptState.topics.filter((topic) => topic.selected).map((topic) => (
-              <li key={topic.id}><span>{topic.editedTitle}</span><button type="button" onClick={() => cancelTopic(topic.id)}>{topic.editedTitle}を中止</button></li>
+              <li key={topic.id}><span>{topic.editedTitle}</span><button type="button" onClick={() => cancelTopic(topic.id)}>{topic.editedTitle}{strings.cancelSuffix}</button></li>
             ))}
           </ul>
         </section>
       ) : transcriptState.status === "result" ? (
-        <MultiTraceResults entries={transcriptState.entries} onRetry={retry} onReset={resetTranscript} />
+        <MultiTraceResults entries={transcriptState.entries} onRetry={retry} onReset={resetTranscript} uiLanguage={uiLanguage} />
       ) : (
-        <TranscriptInputPanel transcript={transcriptState.transcript} detecting={transcriptState.status === "detecting"} error={transcriptState.error} onChange={(transcript) => setTranscriptState({ status: "input", transcript, error: null })} onDetect={detect} />
+        <TranscriptInputPanel transcript={transcriptState.transcript} detecting={transcriptState.status === "detecting"} error={transcriptState.error} onChange={(transcript) => setTranscriptState({ status: "input", transcript, error: null })} onDetect={detect} uiLanguage={uiLanguage} strings={strings} />
       )}
     </>
   );
